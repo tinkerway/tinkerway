@@ -1,4 +1,4 @@
-# tinkerway
+# Tinkerway
 
 A home base for a maker, or a small team.
 
@@ -10,7 +10,7 @@ Private notes (Demo v1): multi-line compose → encrypted `.tw` vault (OS keysto
 
 ## Housekeeping
 
-Secrets stay out of git: local hk + betterleaks (`mise install && hk install --mise`), CI betterleaks on push/PR/daily, and `.cursor/hooks` for agents.
+Secrets tooling (mise / hk / betterleaks): [`docs/dev-setup.md`](docs/dev-setup.md).
 
 The app demands the source be public because it is more personal with all the notes, context, and everything.
 
