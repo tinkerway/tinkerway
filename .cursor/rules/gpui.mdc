@@ -1,0 +1,13 @@
+---
+description: Never nest GPUI entity.update from inside that entity's own update
+globs: app/**/*.rs
+alwaysApply: false
+---
+
+# GPUI entity updates
+
+Never call `entity.update` on an entity from inside that same entity's update callback or action/event handler.
+
+- Clear or mutate owned fields on `self` (already borrowed), or `cx.defer` work until after the update ends.
+- Parent-owned updates are fine when the parent is the updating entity (e.g. Add button → `line_input.update(... clear ...)`).
+- Lesson: Enter used to call `Home::submit_line` → `line_input.update(clear)` while already inside `LineInput::submit`, which panics with `cannot update LineInput while it is already being updated` (abort / exit 134). Fix: `on_submit` returns success; `LineInput::submit` clears on `self`.

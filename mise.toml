@@ -1,6 +1,9 @@
 [tools]
 hk = "2.2.0"
 betterleaks = "1.8.1"
+# Pin stable for the GPUI app crate (gpui 0.2.x needs a recent rustc/cargo).
+rust = { version = "1.91.0", mr_boxington = true }
+mr-boxington = "1.17.0"
 
 [tasks.pre-commit]
 description = "Run hk pre-commit (betterleaks on staged files)"

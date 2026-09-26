@@ -1,12 +1,16 @@
-# tinkerway
+# Tinkerway
 
 A home base for a maker, or a small team.
 
 You type whatever is in your head. The app keeps the context, turns it into an experiment or a project, and hands the next piece to a person or to a tool you already use. The home base is a folder of files you own.
 
+## App
+
+Private notes (Demo v1): multi-line compose → encrypted `.tw` vault (OS keystore master key) → list/open/edit with debounced autosave. Desktop app under [`app/`](app/) (Rust + [GPUI](https://gpui.rs)); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no GPUI. See [`app/README.md`](app/README.md) to run on Mac (Xcode / Metal) or Linux / Cursor cloud VMs (Vulkan lavapipe + Secret Service or XDG key file). Norms: [`docs/`](docs/).
+
 ## Housekeeping
 
-Secrets stay out of git: local hk + betterleaks (`mise install && hk install --mise`), CI betterleaks on push/PR/daily, and `.cursor/hooks` for agents.
+Secrets tooling (mise / hk / betterleaks): [`docs/dev-setup.md`](docs/dev-setup.md).
 
 The app demands the source be public because it is more personal with all the notes, context, and everything.
 
