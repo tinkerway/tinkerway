@@ -2,6 +2,8 @@
 
 First desktop slice: type a line, write a markdown file under `.tinkerway-workspace/`, see the list.
 
+Architecture, privacy, and notes UI norms: [`docs/`](../docs/).
+
 Licensed under the repo root [LICENSE](../LICENSE) (O'Saasy). Not open source.
 
 ## Run (macOS)
