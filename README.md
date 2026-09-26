@@ -4,7 +4,7 @@ A workshop for a maker, or a small team.
 
 You type whatever is in your head. The app keeps the context, turns it into an experiment or a project, and hands the next piece to a person or to a tool you already use. The workshop is a folder of files you own.
 
-## License
+## Housekeeping
 
 The app demands the source be public because it is more personal with all the notes, context, and everything.
 
