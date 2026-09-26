@@ -9,8 +9,15 @@ publish = false
 [dependencies]
 aes-gcm = "0.10"
 directories = "5"
-# No default features: on macOS `apple-native` uses Keychain; on Linux CI (no Apple
-# feature applying) keyring falls back to its in-process mock store.
-keyring = { version = "3.6", default-features = false, features = ["apple-native"] }
+# Platform stores only (no default features / no mock in production paths).
+# macOS: Keychain (`apple-native`). Linux: keyutils + Secret Service
+# (`linux-native-sync-persistent` + `crypto-rust` for D-Bus encryption).
+# If Secret Service is missing on Linux, tinkerway-vault falls back to a 0600
+# XDG file key — see keystore.rs. Do not weaken the Mac Keychain path.
+keyring = { version = "3.6", default-features = false, features = [
+  "apple-native",
+  "linux-native-sync-persistent",
+  "crypto-rust",
+] }
 rand = "0.8"
 zeroize = { version = "1", features = ["derive"] }

@@ -320,7 +320,7 @@ impl Render for TinkerwayApp {
                             .text_sm()
                             .text_color(rgb(0x555555))
                             .child(
-                                "Write privately. Notes stay encrypted on disk; Keychain holds the key.",
+                                "Write privately. Notes stay encrypted on disk; the OS keystore holds the key.",
                             ),
                     )
                     .child(

@@ -17,7 +17,8 @@ fn main() {
             Err(err) => {
                 eprintln!("tinkerway: could not unlock vault: {err}");
                 eprintln!(
-                    "tinkerway: on Mac, Keychain must be available for ai.tinkerway.app / vault-master-key"
+                    "tinkerway: need OS keystore for ai.tinkerway.app / vault-master-key \
+                     (macOS Keychain; Linux Secret Service or XDG file fallback — see app/README.md)"
                 );
                 return;
             }

@@ -7,7 +7,7 @@
 | Piece | Rule |
 | --- | --- |
 | Note bodies at rest | **Ciphertext** — AES-256-GCM envelopes (`.tw`) + small `manifest.json`. Not open `.md` as the vault. |
-| Master key | **macOS Keychain** entry `ai.tinkerway.app` / `vault-master-key` (32-byte key, hex). Never store the key in the vault folder or the repo. |
+| Master key | **OS keystore**: macOS Keychain entry `ai.tinkerway.app` / `vault-master-key` (32-byte key, hex). On Linux: Secret Service / keyutils via the same `keyring` API; if unavailable, a **0600** XDG file `…/ai.tinkerway.app/master-key` (dev/cloud VM fallback only). Never store the key in the vault folder or the repo. |
 | Vault root | Application Support / XDG: `…/ai.tinkerway.app/vault/` via `directories`. |
 | Prefs / paths | Plaintext JSON OK later (theme, last-selected id, vault root). |
 | Plaintext in process | Only in tinkerway memory after unlock. |
@@ -20,6 +20,8 @@ Threat model (v0): resist casual filesystem browse and sync/backup of vault file
 
 ```text
 ~/Library/Application Support/ai.tinkerway.app/   # Mac
+~/.local/share/ai.tinkerway.app/                  # Linux (XDG)
+  master-key            # Linux fallback only (0600); Mac uses Keychain
   vault/
     manifest.json       # version, aead id, note ids — no bodies
     notes/<id>.tw       # TW01 || nonce || ciphertext+tag
@@ -39,7 +41,7 @@ Keep pipes separate:
 | --- | --- | --- |
 | **Vault sync** | Ciphertext + manifest only | No |
 | **Export markdown** | User-triggered “Export…” to a folder they choose (not Demo v1) | Yes — deliberate |
-| **Key** | Keychain only (v0 single Mac) | Never in synced folder |
+| **Key** | Keychain (Mac) / Secret Service or XDG file (Linux) | Never in synced vault folder |
 
 ## Migration
 
@@ -47,7 +49,7 @@ On launch, if cwd `.tinkerway-workspace/*.md` exists, notes are encrypted into t
 
 ## Linux CI / tests
 
-Vault unit tests use `Vault::open_with_key` (explicit test key) so Keychain / Secret Service is not required. Production Mac path uses Keychain via `keyring` (`apple-native`).
+Most vault unit tests use `Vault::open_with_key` (explicit test key). The keystore smoke test calls `load_or_create_master_key`, which on Linux uses Secret Service when a session D-Bus keyring is present, otherwise the XDG `master-key` file. Production Mac path remains Keychain-only via `keyring` (`apple-native`) — no file fallback.
 
 ## Open source vs secrets
 

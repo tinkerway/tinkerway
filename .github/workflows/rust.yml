@@ -33,7 +33,9 @@ jobs:
             libegl1-mesa-dev \
             libvulkan-dev \
             libfontconfig1-dev \
-            libfreetype6-dev
+            libfreetype6-dev \
+            libdbus-1-dev \
+            libsecret-1-dev
 
       - name: cargo test
         run: |
