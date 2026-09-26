@@ -31,6 +31,6 @@ Lead with the result. No recap of the whole project. No menu of options unless t
 ## Rules that still apply
 
 - Do not edit the README "That said" list
-- Do not push unless they say to push
+- Push after commits by default (squash-merge PRs into main)
 - Do not post to WIP
 - Do not scaffold `core/` or `macos/` until they ask to start the app
