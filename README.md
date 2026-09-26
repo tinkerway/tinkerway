@@ -8,7 +8,9 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 
 The app is open source. It reads personal notes and context, so it cannot be a black box.
 
-- Your data stays yours, and it is backed up. The app will change quickly. This is experimental software.
+- Your data stays yours, and it is backed up.
+- This is experimental. Features that get added will change or be updated quickly.
+- There are very few features. The product is the backbone: a platform where you connect the tools you already use and build your own home base.
 - A future version might become closed source if security, or running the project, gets out of hand and stops being peaceful to live with.
 - The project is opinionated. Pull requests are not merged at random.
 - Contributions are welcome, especially from people who are better at a piece of this. Good work is not discarded at random.
