@@ -1,4 +1,4 @@
-# Tinkerway
+# tinkerway
 
 A workshop for a maker, or a small team.
 
@@ -12,10 +12,10 @@ So it can't be a black box people trust blindly.
 
 That said,
 
-1. Future version might become closed source if it gets out of my hand to manage (security or any other problem that I can't manage and affect living peacefully)
+1. This is very much an experimental software where I tinker with my curiosity so things may change rapidly but making sure data is always yours backed up securely to whatver source you choose.
 
-2. This is very much an experimental software where I tinker with my curiosity so things may change rapidly but making sure data is always yours backed up securely to whatver source you choose.
+2. Future version might become closed source if it gets out of my hand to manage (security or any other problem that I can't manage and affect living peacefully)
 
 3. Very opinionated so I may not merge PRs randomly. I still hope many talented people than me contribute so I won't randomly discard randomly as well. All this to say please don't have high hopes when you contribute. I know I know, it doesn't feel exciting but hey, I gotta do it for my own sanity.
 
-4. This is a running list of disclaimers, to protect against increased work load  and to keep some sanity for myself while managing a project that is
+4. This is a running list of disclaimers, to protect against increased work load and to keep some sanity for myself while managing a project that is out there in the public.
