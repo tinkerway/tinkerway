@@ -10,3 +10,35 @@ build/
 .swiftpm/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
+
+# Env / credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.p12
+*.p8
+*.key
+*.jks
+*.keystore
+*.mobileprovision
+*.provisionprofile
+key.properties
+credentials.json
+*_credentials.json
+AuthKey_*.p8
+google-services.json
+GoogleService-Info.plist
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# Local hk overrides
+hk.local.pkl
+
+# Dogfood / personal workshop data (app content, not source)
+.dogfood/
+dogfood/
+.workspace-data/

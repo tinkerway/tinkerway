@@ -1,0 +1,10 @@
+amends "package://github.com/jdx/hk/releases/download/v2.2.0/hk@2.2.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.2.0/hk@2.2.0#/Builtins.pkl"
+
+// Secret scan only — keep this config small.
+// Install hooks once per clone: `mise install && hk install --mise`
+steps {
+  ["gitleaks"] = (Builtins.gitleaks) {
+    scan = "staged"
+  }
+}
