@@ -15,6 +15,10 @@ impl AssetSource for Assets {
             "brand/tinkerway-icon.png" => {
                 Some(include_bytes!("../assets/brand/tinkerway-icon.png"))
             }
+            "brand/tinkerway-icon-1024.png" => {
+                Some(include_bytes!("../assets/brand/tinkerway-icon-1024.png"))
+            }
+            "brand/tinkerway.icns" => Some(include_bytes!("../assets/brand/tinkerway.icns")),
             "brand/tinkerway-header.jpg" | "brand/tinkerway-header.jpeg" => {
                 Some(include_bytes!("../assets/brand/tinkerway-header.jpg"))
             }
@@ -29,6 +33,8 @@ impl AssetSource for Assets {
             Ok(vec![
                 "tinkerway-icon.jpg".into(),
                 "tinkerway-icon.png".into(),
+                "tinkerway-icon-1024.png".into(),
+                "tinkerway.icns".into(),
                 "tinkerway-header.jpg".into(),
             ])
         } else {

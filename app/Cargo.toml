@@ -21,6 +21,12 @@ path = "src/main.rs"
 gpui = { version = "=0.2.2", default-features = true }
 tinkerway-vault = { path = "../crates/tinkerway-vault" }
 
+# Already pulled by gpui on macOS; direct dep so we can set the Dock icon from PNG
+# (GPUI 0.2.2 has no WindowOptions icon API).
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.26"
+objc = "0.2"
+
 [dev-dependencies]
 # Enables TestAppContext / #[gpui::test]. Unions with the dependency above for tests;
 # pulls leak-detection, rand, and related test-support transitive features.

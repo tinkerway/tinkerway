@@ -39,7 +39,16 @@ Legacy plaintext `.tinkerway-workspace/` (if present in cwd) is migrated once in
 
 ## App / Dock icon
 
-GPUI **0.2.2** has no cross-platform `WindowOptions` icon API (Dock icon for unsigned `cargo run` is limited). Demo v1 ships brand assets under `app/assets/brand/` and shows the icon in the window chrome. A packaged `.app` with `.icns` is the practical path for a real Dock icon later.
+Brand assets live under `app/assets/brand/`:
+
+| File | Use |
+| --- | --- |
+| `tinkerway-icon.png` (512) | Window chrome + Dock via `NSApplication.setApplicationIconImage` on macOS |
+| `tinkerway-icon-1024.png` | High-res source |
+| `tinkerway.icns` | Packaged `.app` / Finder (multi-size) |
+| `icon.iconset/` | Source PNGs used to build the `.icns` |
+
+GPUI **0.2.2** has no `WindowOptions` icon field, so on Mac we set the Dock icon through AppKit after launch. Rebuild the `.icns` anytime with the PNGs in `icon.iconset/` (or `iconutil -c icns icon.iconset` on a Mac).
 
 ## Linux
 
@@ -49,3 +58,4 @@ GPUI **0.2.2** has no cross-platform `WindowOptions` icon API (Dock icon for uns
 
 - [gpui](https://crates.io/crates/gpui) `=0.2.2` — Apache-2.0 (Zed). UI shell only.
 - [tinkerway-vault](../crates/tinkerway-vault) — AES-256-GCM envelopes, Keychain via `keyring`, paths via `directories` (`rand`, `zeroize`). No GPUI.
+- macOS only: `cocoa` / `objc` (same stack gpui already uses) to set the Dock icon from the brand PNG.

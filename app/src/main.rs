@@ -2,13 +2,14 @@ use gpui::{
     Application, Bounds, Focusable, TitlebarOptions, WindowBounds, WindowOptions, prelude::*, px,
     size,
 };
-use tinkerway::{
-    Assets, TextInput, TinkerwayApp, bind_text_input_keys,
-};
+use tinkerway::{Assets, TextInput, TinkerwayApp, bind_text_input_keys};
 use tinkerway_vault::Vault;
 
 fn main() {
     Application::new().with_assets(Assets).run(|cx| {
+        #[cfg(target_os = "macos")]
+        tinkerway::apply_dock_icon();
+
         bind_text_input_keys(cx);
 
         let vault = match Vault::unlock_default() {
