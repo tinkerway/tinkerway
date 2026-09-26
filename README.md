@@ -6,7 +6,7 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 
 ## License
 
-The app demands the source be public, under the [O'Saasy license](https://osaasy.dev), because it is more personal with all the notes, context, and everything.
+The app demands the source be public because it is more personal with all the notes, context, and everything.
 
 So it can't be a black box people trust blindly.
 
