@@ -1,10 +1,10 @@
 ---
-name: whats-next
-description: Answer "what's next" for tinkerway from project notes and git state. Use when the user runs /whats-next or asks what to do next, what's left, or what to work on.
+name: next
+description: Answer "what's next" for tinkerway from project notes and git state. Use when the user runs /next or asks what to do next, what's left, or what to work on.
 disable-model-invocation: true
 ---
 
-# What's next
+# Next
 
 Give the next concrete step for this project. Do not start the work unless they ask.
 
