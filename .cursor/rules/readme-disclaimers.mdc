@@ -1,0 +1,7 @@
+---
+description: Do not edit the disclaimer list in the README
+globs: README.md
+alwaysApply: true
+---
+
+The "That said" list in README.md is written by Rinas. Do not edit, rephrase, reorder, or correct it. Rinas updates that section.
