@@ -4,6 +4,10 @@ A home base for a maker, or a small team.
 
 You type whatever is in your head. The app keeps the context, turns it into an experiment or a project, and hands the next piece to a person or to a tool you already use. The home base is a folder of files you own.
 
+## App
+
+The desktop shell is a Rust + [GPUI](https://gpui.rs) app under [`app/`](app/). First slice: type a line, write a markdown note under `.tinkerway-workspace/`, list those notes. See [`app/README.md`](app/README.md) for how to run on Mac (Xcode / Metal required).
+
 ## Housekeeping
 
 Secrets stay out of git: local hk + betterleaks (`mise install && hk install --mise`), CI betterleaks on push/PR/daily, and `.cursor/hooks` for agents.

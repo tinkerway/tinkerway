@@ -1,0 +1,13 @@
+[package]
+name = "tinkerway"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-OSaasy"
+description = "tinkerway desktop app — first slice: type a line, write a markdown note"
+publish = false
+
+[dependencies]
+# Zed GPUI (Apache-2.0). Official gpui_platform is not on crates.io yet for 0.2.x;
+# Application::new() embeds platform backends. Default features include wayland/x11
+# so `cargo check` works on Linux VMs; Mac uses Metal via the same crate.
+gpui = { version = "=0.2.2", default-features = true }

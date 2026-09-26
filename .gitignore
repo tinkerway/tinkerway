@@ -42,3 +42,7 @@ hk.local.pkl
 .dogfood/
 dogfood/
 .workspace-data/
+.tinkerway-workspace/
+
+# Rust editor backups
+**/*.rs.bk
