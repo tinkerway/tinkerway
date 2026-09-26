@@ -1,8 +1,8 @@
 # tinkerway
 
-A workshop for a maker, or a small team.
+A home base for a maker, or a small team.
 
-You type whatever is in your head. The app keeps the context, turns it into an experiment or a project, and hands the next piece to a person or to a tool you already use. The workshop is a folder of files you own.
+You type whatever is in your head. The app keeps the context, turns it into an experiment or a project, and hands the next piece to a person or to a tool you already use. The home base is a folder of files you own.
 
 ## Housekeeping
 
