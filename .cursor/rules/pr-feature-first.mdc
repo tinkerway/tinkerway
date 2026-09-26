@@ -1,0 +1,13 @@
+---
+description: Feature PRs lead with demoable plain language; stack details go under Technical notes
+alwaysApply: true
+---
+
+# Feature-first PRs
+
+For feature PRs, title and body lead with what someone can demo in plain language — not stack jargon.
+
+- **Title:** short and understandable (“Write private notes, open and edit them”), not “Add GPUI + Keychain vault”.
+- **Body:** lead with the demo (what you can do, how to run, how to judge). Put crates, formats, APIs, CI, known limits under a **Technical notes** section.
+- **Infra-only PRs** (CI, secrets, tooling) may stay technical — still say what changed and what it unblocks.
+- Tiny copy/docs-only PRs need not be demo features.
