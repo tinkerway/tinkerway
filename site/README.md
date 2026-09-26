@@ -2,14 +2,15 @@
 
 Cloudflare Worker. This folder is the site. No build step.
 
-`wrangler.jsonc` at the repo root serves this folder.
+`wrangler.jsonc` in this folder serves these files.
 
 On the create screen:
 
 - Project name: `tinkerway`
+- Root directory: `site`
 - Build command: empty
 - Deploy command: `npx wrangler deploy`
 - Preview builds: off
 - Cloudflare Access: off
 
-Leave the root directory as the repo root. Then add the custom domain `tinkerway.ai` on the Worker.
+Then add the custom domain `tinkerway.ai` on the Worker.
