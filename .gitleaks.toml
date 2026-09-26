@@ -1,3 +1,4 @@
+# Project config: extend built-in rules (gitleaks CLI auto-loads .gitleaks.toml).
 title = "tinkerway"
 
 [extend]

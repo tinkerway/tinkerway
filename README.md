@@ -6,7 +6,7 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 
 ## Housekeeping
 
-Secrets stay out of git. After clone: `mise install && hk install --mise` (optional local seatbelt). CI runs gitleaks on every push and pull request. Agents are gated by `.cursor/hooks`.
+Secrets stay out of git: local hk + gitleaks (`mise install && hk install --mise`), CI gitleaks on push/PR/daily, and `.cursor/hooks` for agents.
 
 The app demands the source be public because it is more personal with all the notes, context, and everything.
 
