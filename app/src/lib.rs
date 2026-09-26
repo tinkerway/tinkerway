@@ -9,5 +9,5 @@ pub use text_input::{
     Backspace, Delete, End, Home, Left, LineInput, Right, Submit,
 };
 pub use workspace_files::{
-    WORKSPACE_DIR_NAME, ensure_workspace, list_notes, workspace_dir, write_note,
+    WORKSPACE_DIR_NAME, ensure_workspace, list_notes, read_note, workspace_dir, write_note,
 };

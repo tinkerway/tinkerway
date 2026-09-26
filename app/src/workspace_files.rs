@@ -47,6 +47,29 @@ pub fn list_notes(dir: &Path) -> io::Result<Vec<String>> {
     Ok(entries.into_iter().map(|(_, name)| name).collect())
 }
 
+/// Read a note body by filename. Rejects path separators / `..` — name only.
+pub fn read_note(dir: &Path, name: &str) -> io::Result<String> {
+    let name = name.trim();
+    if name.is_empty()
+        || name.contains('/')
+        || name.contains('\\')
+        || name.contains("..")
+        || Path::new(name).components().count() != 1
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "invalid note name",
+        ));
+    }
+    if Path::new(name).extension().and_then(|e| e.to_str()) != Some("md") {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "note name must end in .md",
+        ));
+    }
+    fs::read_to_string(dir.join(name))
+}
+
 /// Write `line` as a new markdown note. Returns the created filename.
 pub fn write_note(dir: &Path, line: &str) -> io::Result<String> {
     ensure_workspace(dir)?;
@@ -157,6 +180,17 @@ mod tests {
         let body = fs::read_to_string(dir.join(&a)).unwrap();
         assert_eq!(body, "hello world\n");
 
+        let via_helper = read_note(&dir, &a).unwrap();
+        assert_eq!(via_helper, "hello world\n");
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_note_rejects_path_traversal() {
+        let dir = temp_workspace();
+        let err = read_note(&dir, "../secret.md").unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
         let _ = fs::remove_dir_all(&dir);
     }
 

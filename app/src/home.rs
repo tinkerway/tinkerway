@@ -4,11 +4,11 @@ use std::path::PathBuf;
 
 use gpui::{
     App, Context, Entity, FocusHandle, Focusable, MouseButton, SharedString, Window, div,
-    prelude::*, rgb, white,
+    prelude::*, px, rgb, white,
 };
 
 use crate::text_input::LineInput;
-use crate::workspace_files::{list_notes, write_note};
+use crate::workspace_files::{list_notes, read_note, write_note};
 
 /// Bind LineInput key chords on the application keymap.
 pub fn bind_line_input_keys(cx: &mut App) {
@@ -29,6 +29,8 @@ pub fn bind_line_input_keys(cx: &mut App) {
 pub struct TinkerwayApp {
     line_input: Entity<LineInput>,
     notes: Vec<SharedString>,
+    selected_note: Option<SharedString>,
+    selected_body: SharedString,
     status: SharedString,
     workspace: PathBuf,
     focus_handle: FocusHandle,
@@ -43,6 +45,8 @@ impl TinkerwayApp {
         let mut app = Self {
             line_input,
             notes: Vec::new(),
+            selected_note: None,
+            selected_body: SharedString::from(""),
             status: format!("workspace: {}", workspace.display()).into(),
             workspace,
             focus_handle: cx.focus_handle(),
@@ -72,6 +76,14 @@ impl TinkerwayApp {
         &self.notes
     }
 
+    pub fn selected_note(&self) -> Option<&str> {
+        self.selected_note.as_ref().map(|s| s.as_ref())
+    }
+
+    pub fn selected_body(&self) -> &str {
+        &self.selected_body
+    }
+
     pub fn status(&self) -> &str {
         &self.status
     }
@@ -80,9 +92,32 @@ impl TinkerwayApp {
         match list_notes(&self.workspace) {
             Ok(names) => {
                 self.notes = names.into_iter().map(SharedString::from).collect();
+                if let Some(selected) = self.selected_note.clone() {
+                    if self.notes.iter().any(|n| n.as_ref() == selected.as_ref()) {
+                        self.open_note(selected.as_ref(), cx);
+                    } else {
+                        self.selected_note = None;
+                        self.selected_body = SharedString::from("");
+                    }
+                }
             }
             Err(err) => {
                 self.status = format!("could not list notes: {err}").into();
+            }
+        }
+        cx.notify();
+    }
+
+    /// Load `name` into the body pane. Parent-owned path — safe from list clicks.
+    pub fn open_note(&mut self, name: &str, cx: &mut Context<Self>) {
+        match read_note(&self.workspace, name) {
+            Ok(body) => {
+                self.selected_note = Some(SharedString::from(name.to_owned()));
+                self.selected_body = SharedString::from(body);
+                self.status = format!("opened {name}").into();
+            }
+            Err(err) => {
+                self.status = format!("could not open {name}: {err}").into();
             }
         }
         cx.notify();
@@ -130,6 +165,8 @@ impl Render for TinkerwayApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let notes = self.notes.clone();
         let status = self.status.clone();
+        let selected_note = self.selected_note.clone();
+        let selected_body = self.selected_body.clone();
 
         div()
             .flex()
@@ -208,15 +245,61 @@ impl Render for TinkerwayApp {
                                 notes
                                     .into_iter()
                                     .map(|name| {
+                                        let is_selected = selected_note
+                                            .as_ref()
+                                            .is_some_and(|s| s.as_ref() == name.as_ref());
+                                        let open_name = name.clone();
                                         div()
                                             .text_sm()
                                             .py_1()
+                                            .px_1()
+                                            .rounded_sm()
                                             .border_b_1()
                                             .border_color(rgb(0xe5e5e5))
+                                            .cursor_pointer()
+                                            .when(is_selected, |s| s.bg(rgb(0xe8e8e4)))
+                                            .hover(|s| s.bg(rgb(0xeeeeea)))
                                             .child(name)
+                                            .on_mouse_up(
+                                                MouseButton::Left,
+                                                cx.listener(move |this, _, _, cx| {
+                                                    this.open_note(open_name.as_ref(), cx);
+                                                }),
+                                            )
                                             .into_any_element()
                                     })
                                     .collect()
+                            }),
+                    )
+                    .child(
+                        div()
+                            .mt_3()
+                            .text_sm()
+                            .font_weight(gpui::FontWeight::MEDIUM)
+                            .child(match selected_note.as_ref() {
+                                Some(name) => format!("Note · {name}"),
+                                None => "Note".to_string(),
+                            }),
+                    )
+                    .child(
+                        div()
+                            .mt_1()
+                            .p_3()
+                            .rounded_md()
+                            .bg(white())
+                            .border_1()
+                            .border_color(rgb(0xe0e0e0))
+                            .min_h(px(120.))
+                            .text_sm()
+                            .text_color(if selected_note.is_some() {
+                                rgb(0x1a1a1a)
+                            } else {
+                                rgb(0x888888)
+                            })
+                            .child(if selected_note.is_some() {
+                                selected_body
+                            } else {
+                                SharedString::from("Click a note to read it.")
                             }),
                     ),
             )
@@ -227,7 +310,7 @@ impl Render for TinkerwayApp {
 mod tests {
     use super::*;
     use crate::text_input::Submit;
-    use crate::workspace_files::{ensure_workspace, list_notes};
+    use crate::workspace_files::{ensure_workspace, list_notes, write_note};
     use gpui::{Focusable, Keystroke, TestAppContext};
     use std::env;
     use std::fs;
@@ -268,6 +351,28 @@ mod tests {
         // Parent did not clear — text still present (simulates nested-safe path).
         line_input.read_with(&cx, |input, _| {
             assert_eq!(input.text(), "from unit");
+        });
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn open_note_loads_body_into_selection() {
+        let dir = temp_workspace();
+        ensure_workspace(&dir).unwrap();
+        let name = write_note(&dir, "body for click").unwrap();
+
+        let mut cx = TestAppContext::single();
+        let app = cx.update(|cx| {
+            let line_input = cx.new(|cx| LineInput::new(cx, "placeholder"));
+            cx.new(|cx| TinkerwayApp::new(line_input, dir.clone(), cx))
+        });
+
+        app.update(&mut cx, |app, cx| app.open_note(&name, cx));
+        app.read_with(&cx, |app, _| {
+            assert_eq!(app.selected_note(), Some(name.as_str()));
+            assert_eq!(app.selected_body(), "body for click\n");
+            assert!(app.status().starts_with("opened "));
         });
 
         let _ = fs::remove_dir_all(&dir);
