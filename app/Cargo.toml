@@ -3,7 +3,7 @@ name = "tinkerway"
 version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-OSaasy"
-description = "tinkerway desktop app — first slice: type a line, write a markdown note"
+description = "tinkerway desktop app — capture a line as a note, list it, click to read"
 publish = false
 
 [lib]

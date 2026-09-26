@@ -1,6 +1,6 @@
 # tinkerway app
 
-First desktop slice: type a line, write a markdown file under `.tinkerway-workspace/`, see the list.
+Capture a line as a note: type → save → see it in the list → click to read the body.
 
 Architecture, privacy, and notes UI norms: [`docs/`](../docs/).
 
@@ -21,7 +21,14 @@ mise install
 cargo run -p tinkerway
 ```
 
-Notes are written next to your current working directory as `.tinkerway-workspace/*.md` (gitignored).
+## Demo path
+
+1. Type a thought in the line field.
+2. Press Enter (or click **Add**) — it saves as a markdown note.
+3. Find it in the **Notes** list.
+4. Click the row to read the body in the pane below.
+
+Notes are written next to your current working directory as `.tinkerway-workspace/*.md` (gitignored). That folder is **plaintext** today (any same-user tool can read it). An encrypted vault (ciphertext at rest, Keychain master key) is planned next — no vault/crypto crates in this slice.
 
 ## Linux
 
@@ -29,4 +36,4 @@ Notes are written next to your current working directory as `.tinkerway-workspac
 
 ## Dependencies
 
-- [gpui](https://crates.io/crates/gpui) `=0.2.2` — Apache-2.0 (Zed). Platform backends ship inside this crate for 0.2.x; a separate `gpui_platform` crate is not required on crates.io yet for this pin.
+- [gpui](https://crates.io/crates/gpui) `=0.2.2` — Apache-2.0 (Zed). UI shell only; note IO is plain Rust. Platform backends ship inside this crate for 0.2.x.

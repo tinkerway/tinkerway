@@ -6,7 +6,7 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 
 ## App
 
-The desktop shell is a Rust + [GPUI](https://gpui.rs) app under [`app/`](app/). First slice: type a line, write a markdown note under `.tinkerway-workspace/`, list those notes. See [`app/README.md`](app/README.md) for how to run on Mac (Xcode / Metal required). Norms: [`docs/`](docs/).
+Capture a thought as a note: type a line, save it, see it in the list, click to read the body. Desktop app under [`app/`](app/) (Rust + [GPUI](https://gpui.rs)). Notes are plaintext markdown in cwd `.tinkerway-workspace/` for now; an encrypted vault comes later ([`docs/data-and-privacy.md`](docs/data-and-privacy.md)). See [`app/README.md`](app/README.md) to run on Mac (Xcode / Metal required). Norms: [`docs/`](docs/).
 
 ## Housekeeping
 

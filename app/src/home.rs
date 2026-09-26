@@ -1,4 +1,4 @@
-//! Home view: line input → markdown note → notes list.
+//! Home view: capture a line as a note → list → click to read the body.
 
 use std::path::PathBuf;
 
@@ -191,7 +191,7 @@ impl Render for TinkerwayApp {
                         div()
                             .text_sm()
                             .text_color(rgb(0x555555))
-                            .child("Type a line. Enter writes a markdown note in .tinkerway-workspace/."),
+                            .child("Capture a thought. Enter saves it as a note."),
                     )
                     .child(
                         div()
