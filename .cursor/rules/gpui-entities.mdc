@@ -1,0 +1,13 @@
+---
+description: GPUI entity updates and child-to-parent events
+globs: app/**/*.rs
+alwaysApply: false
+---
+
+# GPUI entities
+
+`Entity::update` and an `on_action` listener already hold that entity. Do not call `update` on that same entity from inside the callback. GPUI stops the program.
+
+A child tells its parent with `cx.emit` and `EventEmitter`. The parent uses `cx.subscribe` and keeps the `Subscription`. Drop ends the listener. The handler runs after the child update ends, so the parent may `update` the child there.
+
+Match every variant of an event enum.
