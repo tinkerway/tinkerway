@@ -2,18 +2,30 @@
 
 **Product rule:** private by default. Sibling apps on the same Mac must not read note bodies in plaintext.
 
-## Destination (vault-first)
+## Vault-first (Demo v1)
 
 | Piece | Rule |
 | --- | --- |
-| Note bodies at rest | **Ciphertext** (AEAD envelopes + small manifest). Not open `.md` as the vault. |
-| Master key | **macOS Keychain** (Mac default). Never store the key in the vault folder or the repo. |
-| Prefs / paths | Plaintext JSON OK (theme, last-selected id, vault root). |
+| Note bodies at rest | **Ciphertext** — AES-256-GCM envelopes (`.tw`) + small `manifest.json`. Not open `.md` as the vault. |
+| Master key | **macOS Keychain** entry `ai.tinkerway.app` / `vault-master-key` (32-byte key, hex). Never store the key in the vault folder or the repo. |
+| Vault root | Application Support / XDG: `…/ai.tinkerway.app/vault/` via `directories`. |
+| Prefs / paths | Plaintext JSON OK later (theme, last-selected id, vault root). |
 | Plaintext in process | Only in tinkerway memory after unlock. |
 
 Threat model (v0): resist casual filesystem browse and sync/backup of vault files without leaking note text. Full Keychain/process-memory attacks are out of scope for now.
 
 **Do not** claim privacy from “files live under Application Support” alone. Privacy claim = **ciphertext on disk + key elsewhere**.
+
+## Layout
+
+```text
+~/Library/Application Support/ai.tinkerway.app/   # Mac
+  vault/
+    manifest.json       # version, aead id, note ids — no bodies
+    notes/<id>.tw       # TW01 || nonce || ciphertext+tag
+```
+
+Titles are derived from the first words of the body and live **inside** the ciphertext; the list decrypts on unlock.
 
 ## Integrations are outbound only
 
@@ -26,17 +38,21 @@ Keep pipes separate:
 | Pipe | Moves | Plaintext? |
 | --- | --- | --- |
 | **Vault sync** | Ciphertext + manifest only | No |
-| **Export markdown** | User-triggered “Export…” to a folder they choose | Yes — deliberate |
+| **Export markdown** | User-triggered “Export…” to a folder they choose (not Demo v1) | Yes — deliberate |
 | **Key** | Keychain only (v0 single Mac) | Never in synced folder |
 
-Export markdown ≠ vault sync. Syncing ciphertext without the key is safe but useless on another device until a wrapped-key story exists.
+## Migration
+
+On launch, if cwd `.tinkerway-workspace/*.md` exists, notes are encrypted into the vault and plaintext files are **deleted** after a verified decrypt round-trip. The app no longer writes that folder.
+
+## Linux CI / tests
+
+Vault unit tests use `Vault::open_with_key` (explicit test key) so Keychain / Secret Service is not required. Production Mac path uses Keychain via `keyring` (`apple-native`).
 
 ## Open source vs secrets
 
 Encryption **code** may be public. **Keys, key material, and plaintext vault data never go in the repo.**
 
-## v0 today vs destination
+## Approved crypto / path crates (Demo v1)
 
-Until vault crates are explicitly approved, the demo slice may still write plaintext under cwd `.tinkerway-workspace/` (gitignored). That is a temporary IO path — **not** the product default to market or keep.
-
-Destination: encrypt at rest under a stable app data root; migrate legacy plaintext once, then stop writing it. **Do not add crypto crates** until approved.
+`keyring`, `aes-gcm`, `rand`, `zeroize`, `directories` — do not add further deps without an explicit yes.

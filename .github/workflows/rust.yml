@@ -37,9 +37,9 @@ jobs:
       - name: cargo test
         run: |
           export LIBRARY_PATH="$(dirname "$(g++ -print-file-name=libstdc++.so)"):${LIBRARY_PATH:-}"
-          cargo test -p tinkerway
+          cargo test -p tinkerway-vault -p tinkerway
 
       - name: cargo check
         run: |
           export LIBRARY_PATH="$(dirname "$(g++ -print-file-name=libstdc++.so)"):${LIBRARY_PATH:-}"
-          cargo check -p tinkerway
+          cargo check -p tinkerway-vault -p tinkerway

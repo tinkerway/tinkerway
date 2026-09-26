@@ -1,13 +1,11 @@
-//! tinkerway desktop app library — first slice UI and workspace helpers.
+//! tinkerway desktop app library — GPUI shell over tinkerway-vault.
 
+mod assets;
 mod home;
 mod text_input;
-mod workspace_files;
 
-pub use home::{TinkerwayApp, bind_line_input_keys};
+pub use assets::Assets;
+pub use home::{TinkerwayApp, bind_text_input_keys};
 pub use text_input::{
-    Backspace, Delete, End, Home, Left, LineInput, Right, Submit,
-};
-pub use workspace_files::{
-    WORKSPACE_DIR_NAME, ensure_workspace, list_notes, read_note, workspace_dir, write_note,
+    Backspace, Delete, End, Home, Left, Newline, Right, Submit, TextInput,
 };

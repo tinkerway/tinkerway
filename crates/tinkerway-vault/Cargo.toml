@@ -1,0 +1,16 @@
+[package]
+name = "tinkerway-vault"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-OSaasy"
+description = "Encrypted note vault IO — no GPUI"
+publish = false
+
+[dependencies]
+aes-gcm = "0.10"
+directories = "5"
+# No default features: on macOS `apple-native` uses Keychain; on Linux CI (no Apple
+# feature applying) keyring falls back to its in-process mock store.
+keyring = { version = "3.6", default-features = false, features = ["apple-native"] }
+rand = "0.8"
+zeroize = { version = "1", features = ["derive"] }

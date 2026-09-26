@@ -12,21 +12,20 @@ There is no batteries-included “Rails for GPUI desktop.” Web stacks (Loco, A
 
 ## Workspace shape (DiskTree-style)
 
-Start small; grow only when a boundary hurts:
-
 ```text
-crates/ (or modules today)
-  core / vault   # encrypt, manifest, paths, migrate — NO gpui
-app/             # binary — GPUI shell, Entities, calls core APIs
+crates/
+  tinkerway-vault/   # encrypt, manifest, paths, migrate, Keychain — NO gpui
+app/                 # binary — GPUI shell, Entities, calls vault APIs
 ```
 
-Mirror [DiskTree](https://github.com/tobi/disktree): correctness for vault/domain must be testable **without** a display or GPU. Prefer modules inside a vault/core crate over premature micro-crates.
+Mirror [DiskTree](https://github.com/tobi/disktree): correctness for vault/domain must be testable **without** a display or GPU. Prefer modules inside the vault crate over premature micro-crates.
 
 ## What not to do
 
-- Put vault seal/open or master keys in long-lived GPUI Entity fields.
+- Put vault seal/open or master keys in long-lived GPUI Entity fields beyond the unlocked session handle.
 - Structure the notes product as an HTTP/ORM “model layer.”
 - Add a second UI stack (Tauri, WebView, etc.) alongside GPUI.
+- Nest `entity.update` on an entity from inside that entity’s own update (see `.cursor/rules/gpui.mdc`).
 
 ## Run
 

@@ -1,6 +1,6 @@
 # tinkerway app
 
-Capture a line as a note: type → save → see it in the list → click to read the body.
+Demo v1: multi-line private notes — encrypted `.tw` vault, Keychain master key, list/open/edit with debounced autosave.
 
 Architecture, privacy, and notes UI norms: [`docs/`](../docs/).
 
@@ -21,19 +21,31 @@ mise install
 cargo run -p tinkerway
 ```
 
+First launch creates a Keychain item (`ai.tinkerway.app` / `vault-master-key`) and a vault under Application Support:
+
+`~/Library/Application Support/ai.tinkerway.app/vault/`
+
+Allow Keychain access when prompted (unsigned `cargo run` binaries may ask each rebuild until you Always Allow).
+
 ## Demo path
 
-1. Type a thought in the line field.
-2. Press Enter (or click **Add**) — it saves as a markdown note.
-3. Find it in the **Notes** list.
-4. Click the row to read the body in the pane below.
+1. Type a multi-line thought in the compose field (Enter = newline).
+2. Click **Add note** or press **⌘↩** — body is sealed as a `.tw` note; list shows a title from the first words.
+3. Click a list row to open it in the body editor.
+4. Edit the markdown body — changes autosave after a short debounce.
+5. Confirm the window shows the tinkerway brand icon (from `app/assets/brand/`).
 
-Notes are written next to your current working directory as `.tinkerway-workspace/*.md` (gitignored). That folder is **plaintext** today (any same-user tool can read it). An encrypted vault (ciphertext at rest, Keychain master key) is planned next — no vault/crypto crates in this slice.
+Legacy plaintext `.tinkerway-workspace/` (if present in cwd) is migrated once into the vault and removed.
+
+## App / Dock icon
+
+GPUI **0.2.2** has no cross-platform `WindowOptions` icon API (Dock icon for unsigned `cargo run` is limited). Demo v1 ships brand assets under `app/assets/brand/` and shows the icon in the window chrome. A packaged `.app` with `.icns` is the practical path for a real Dock icon later.
 
 ## Linux
 
-`cargo check` / `cargo test` work with GPUI’s default `wayland` / `x11` features when system libraries are present (for example `libwayland-dev`, `libxkbcommon-dev`, `libxkbcommon-x11-dev`, `libxcb1-dev`). A full GUI run still needs a graphical session and GPU stack; day-to-day development of this slice is aimed at Mac + Xcode.
+`cargo check` / `cargo test` work with GPUI’s default `wayland` / `x11` features when system libraries are present (see `.github/workflows/rust.yml`). Vault tests use an in-memory test key (`Vault::open_with_key`) so Keychain is not required. A full GUI run still needs a graphical session and GPU stack; day-to-day demo is aimed at Mac + Xcode.
 
 ## Dependencies
 
-- [gpui](https://crates.io/crates/gpui) `=0.2.2` — Apache-2.0 (Zed). UI shell only; note IO is plain Rust. Platform backends ship inside this crate for 0.2.x.
+- [gpui](https://crates.io/crates/gpui) `=0.2.2` — Apache-2.0 (Zed). UI shell only.
+- [tinkerway-vault](../crates/tinkerway-vault) — AES-256-GCM envelopes, Keychain via `keyring`, paths via `directories` (`rand`, `zeroize`). No GPUI.

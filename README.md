@@ -6,7 +6,7 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 
 ## App
 
-Capture a thought as a note: type a line, save it, see it in the list, click to read the body. Desktop app under [`app/`](app/) (Rust + [GPUI](https://gpui.rs)). Notes are plaintext markdown in cwd `.tinkerway-workspace/` for now; an encrypted vault comes later ([`docs/data-and-privacy.md`](docs/data-and-privacy.md)). See [`app/README.md`](app/README.md) to run on Mac (Xcode / Metal required). Norms: [`docs/`](docs/).
+Private notes (Demo v1): multi-line compose → encrypted `.tw` vault (Keychain master key) → list/open/edit with debounced autosave. Desktop app under [`app/`](app/) (Rust + [GPUI](https://gpui.rs)); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no GPUI. See [`app/README.md`](app/README.md) to run on Mac (Xcode / Metal required). Norms: [`docs/`](docs/).
 
 ## Housekeeping
 
