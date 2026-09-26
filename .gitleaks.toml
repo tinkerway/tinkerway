@@ -1,4 +1,5 @@
-# Project config: extend built-in rules (gitleaks CLI auto-loads .gitleaks.toml).
+# Betterleaks auto-loads .gitleaks.toml (or .betterleaks.toml) from the repo root.
+# Kept as .gitleaks.toml for drop-in compatibility; extend built-in rules.
 title = "tinkerway"
 
 [extend]

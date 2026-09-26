@@ -3,8 +3,9 @@ import "package://github.com/jdx/hk/releases/download/v2.2.0/hk@2.2.0#/Builtins.
 
 // Secret scan only — keep this config small.
 // Install hooks once per clone: `mise install && hk install --mise`
+// Builtins.betterleaks runs `dir` on files; pre-commit needs staged git scan (local only, no --validation).
 steps {
-  ["gitleaks"] = (Builtins.gitleaks) {
-    scan = "staged"
+  ["betterleaks"] {
+    check = "betterleaks git --pre-commit --staged --redact --verbose --no-banner"
   }
 }

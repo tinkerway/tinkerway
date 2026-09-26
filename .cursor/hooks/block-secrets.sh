@@ -35,11 +35,11 @@ if ! command -v mise >/dev/null 2>&1; then
   done
 fi
 
-run_gitleaks() {
+run_betterleaks() {
   if command -v mise >/dev/null 2>&1; then
-    mise exec -- gitleaks "$@"
-  elif command -v gitleaks >/dev/null 2>&1; then
-    gitleaks "$@"
+    mise exec -- betterleaks "$@"
+  elif command -v betterleaks >/dev/null 2>&1; then
+    betterleaks "$@"
   else
     return 127
   fi
@@ -53,17 +53,17 @@ if printf '%s\n' "$staged" | grep -Eiq "$sensitive_re"; then
 fi
 
 set +e
-scan_out="$(run_gitleaks git --staged --redact --verbose --no-banner --no-color 2>&1)"
+scan_out="$(run_betterleaks git --staged --redact --verbose --no-banner --no-color 2>&1)"
 scan_ec=$?
 set -e
 
 if [[ $scan_ec -eq 127 ]]; then
-  deny "Commit blocked: gitleaks is not available. Install with: curl -fsSL https://mise.run | sh && mise install (see mise.toml)."
+  deny "Commit blocked: betterleaks is not available. Install with: curl -fsSL https://mise.run | sh && mise install (see mise.toml)."
 fi
 
 if [[ $scan_ec -ne 0 ]]; then
   summary="$(printf '%s\n' "$scan_out" | tail -n 40)"
-  deny "Commit blocked: gitleaks found potential secrets in staged files.
+  deny "Commit blocked: betterleaks found potential secrets in staged files.
 
 ${summary}
 
