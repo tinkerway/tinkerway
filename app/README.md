@@ -134,4 +134,4 @@ GPUI **0.2.2** has no `WindowOptions` icon field, so on Mac we set the Dock icon
 
 - [gpui](https://crates.io/crates/gpui) `=0.2.2` — Apache-2.0 (Zed). UI shell only.
 - [tinkerway-vault](../crates/tinkerway-vault) — AES-256-GCM envelopes, OS keystore via `keyring` (`apple-native` + `linux-native-sync-persistent`), paths via `directories` (`rand`, `zeroize`). No GPUI.
-- macOS only: `cocoa` / `objc` (same stack gpui already uses) to set the Dock icon from the brand PNG.
+- macOS only: `cocoa` (same stack gpui already uses) to set the Dock icon from the brand PNG.

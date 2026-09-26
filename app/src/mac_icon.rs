@@ -7,7 +7,6 @@
 use cocoa::appkit::{NSApp, NSApplication, NSImage};
 use cocoa::base::{id, nil};
 use cocoa::foundation::NSData;
-use objc::{class, msg_send, sel, sel_impl};
 
 const ICON_PNG: &[u8] = include_bytes!("../assets/brand/tinkerway-icon.png");
 
@@ -27,7 +26,7 @@ pub fn apply_dock_icon() {
             return;
         }
 
-        let image: id = NSImage::alloc(nil).initWithData_(data);
+        let image: id = NSImage::initWithData_(NSImage::alloc(nil), data);
         if image == nil {
             eprintln!("tinkerway: could not decode brand PNG for Dock icon");
             return;
@@ -35,13 +34,7 @@ pub fn apply_dock_icon() {
 
         let app = NSApp();
         if app == nil {
-            // NSApp may still be nil very early; try sharedApplication.
-            let app: id = msg_send![class!(NSApplication), sharedApplication];
-            if app == nil {
-                eprintln!("tinkerway: NSApp unavailable; Dock icon not set");
-                return;
-            }
-            app.setApplicationIconImage_(image);
+            eprintln!("tinkerway: NSApp unavailable; Dock icon not set");
             return;
         }
         app.setApplicationIconImage_(image);

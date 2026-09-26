@@ -25,7 +25,6 @@ tinkerway-vault = { path = "../crates/tinkerway-vault" }
 # (GPUI 0.2.2 has no WindowOptions icon API).
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.26"
-objc = "0.2"
 
 [dev-dependencies]
 # Enables TestAppContext / #[gpui::test]. Unions with the dependency above for tests;

@@ -5650,7 +5650,6 @@ version = "0.1.0"
 dependencies = [
  "cocoa 0.26.0",
  "gpui",
- "objc",
  "tinkerway-vault",
 ]
 
