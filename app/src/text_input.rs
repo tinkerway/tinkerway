@@ -22,7 +22,10 @@ pub struct LineInput {
     marked_range: Option<Range<usize>>,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
-    pub on_submit: Option<Box<dyn Fn(&str, &mut Window, &mut Context<Self>)>>,
+    /// Returns `true` when the parent accepted the line (e.g. note written).
+    /// `LineInput::submit` clears on `self` after success — do not nest
+    /// `entity.update` on this input from inside the callback.
+    pub on_submit: Option<Box<dyn Fn(&str, &mut Window, &mut Context<Self>) -> bool>>,
 }
 
 impl LineInput {
@@ -42,6 +45,15 @@ impl LineInput {
 
     pub fn text(&self) -> &str {
         &self.content
+    }
+
+    pub fn set_text(&mut self, text: impl Into<SharedString>, cx: &mut Context<Self>) {
+        self.content = text.into();
+        let len = self.content.len();
+        self.selected_range = len..len;
+        self.selection_reversed = false;
+        self.marked_range = None;
+        cx.notify();
     }
 
     pub fn clear(&mut self, cx: &mut Context<Self>) {
@@ -90,9 +102,15 @@ impl LineInput {
         self.replace_text_in_range(None, "", window, cx);
     }
 
-    fn submit(&mut self, _: &Submit, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(callback) = self.on_submit.as_ref() {
-            callback(&self.content, window, cx);
+    pub(crate) fn submit(&mut self, _: &Submit, window: &mut Window, cx: &mut Context<Self>) {
+        let success = self
+            .on_submit
+            .as_ref()
+            .map(|callback| callback(&self.content, window, cx))
+            .unwrap_or(false);
+        if success {
+            // Clear on `self` while already borrowed — never `entity.update(self)`.
+            self.clear(cx);
         }
     }
 
