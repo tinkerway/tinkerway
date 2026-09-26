@@ -1,0 +1,12 @@
+.DS_Store
+
+# Rust
+target/
+
+# Xcode / Swift
+DerivedData/
+build/
+*.xcuserstate
+.swiftpm/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
