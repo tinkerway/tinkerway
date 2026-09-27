@@ -1,6 +1,6 @@
 # tinkerway app
 
-Demo v1: multi-line private notes — encrypted `.tw` vault, OS keystore master key, list/open/edit with debounced autosave.
+Demo v1: capture a thought. It stays in the list. An older line opens so you can read it. You cannot change an older line. Words are sealed in an encrypted `.tw` vault with an OS keystore master key.
 
 Architecture, privacy, and notes UI norms: [`docs/`](../docs/).
 
@@ -109,11 +109,11 @@ Screenshots: `scrot` / `import` against `$DISPLAY`. Short recordings: `ffmpeg -f
 
 ## Demo path
 
-1. Type a multi-line thought in the compose field (Enter = newline).
-2. Click **Add note** or press **⌘↩** / **Ctrl+Enter** — body is sealed as a `.tw` note; list shows a title from the first words.
-3. Click a list row to open it in the body editor.
-4. Edit the markdown body — changes autosave after a short debounce.
-5. Confirm the window shows the tinkerway brand icon (from `app/assets/brand/`).
+1. Type a thought in the writing field (Enter = newline). It is saved as a draft. It does not appear in the list.
+2. Click **Send** or press **Command-Enter**. The thought appears in the list. The field clears.
+3. Click an older line. You can read it. You cannot change it.
+4. Click that line again to return to the writing field.
+5. Click **Shortcuts**, or hold Command, to see the shortcut keys.
 
 Legacy plaintext `.tinkerway-workspace/` (if present in cwd) is migrated once into the vault and removed.
 
@@ -123,7 +123,7 @@ Brand assets live under `app/assets/brand/`:
 
 | File | Use |
 | --- | --- |
-| `tinkerway-icon.png` (512) | Window chrome + Dock via `NSApplication.setApplicationIconImage` on macOS |
+| `tinkerway-icon.png` (512) | Dock via `NSApplication.setApplicationIconImage` on macOS |
 | `tinkerway-icon-1024.png` | High-res source |
 | `tinkerway.icns` | Packaged `.app` / Finder (multi-size) |
 | `icon.iconset/` | Source PNGs used to build the `.icns` |

@@ -1,8 +1,10 @@
 use gpui::{
-    Application, Bounds, Focusable, TitlebarOptions, WindowBounds, WindowOptions, prelude::*, px,
-    size,
+    prelude::*, px, size, Application, Bounds, Focusable, TitlebarOptions, WindowBounds,
+    WindowOptions,
 };
-use tinkerway::{Assets, TextInput, TinkerwayApp, bind_text_input_keys};
+use gpui_component::input::InputState;
+use gpui_component::Root;
+use tinkerway::{bind_text_input_keys, Assets, TextInput, TinkerwayApp};
 use tinkerway_vault::Vault;
 
 fn main() {
@@ -10,6 +12,7 @@ fn main() {
         #[cfg(target_os = "macos")]
         tinkerway::apply_dock_icon();
 
+        gpui_component::init(cx);
         bind_text_input_keys(cx);
 
         let vault = match Vault::unlock_default() {
@@ -24,38 +27,46 @@ fn main() {
             }
         };
 
-        let bounds = Bounds::centered(None, size(px(560.), px(720.)), cx);
+        let bounds = Bounds::centered(None, size(px(1200.), px(800.)), cx);
+        let mut app_slot = None;
         let window = cx
             .open_window(
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     titlebar: Some(TitlebarOptions {
-                        title: Some("tinkerway".into()),
+                        title: Some("Tinkerway".into()),
                         ..Default::default()
                     }),
                     app_id: Some("ai.tinkerway.app".into()),
                     ..Default::default()
                 },
-                |_, cx| {
+                |window, cx| {
                     let compose = cx.new(|cx| {
-                        TextInput::new(cx, "What's on your mind?").multiline(4)
+                        InputState::new(window, cx)
+                            .multi_line(true)
+                            .rows(6)
+                            .placeholder("What's new?")
                     });
-                    let body = cx.new(|cx| TextInput::new(cx, "Note body").multiline(8));
+                    let body = cx.new(|cx| TextInput::new(cx, "Capture").multiline(8));
                     let app = cx.new(|cx| {
                         let mut app = TinkerwayApp::new(compose.clone(), body.clone(), vault, cx);
                         app.migrate_legacy_if_needed(cx);
                         app
                     });
-                    TinkerwayApp::connect_compose(&app, &compose, cx);
+                    TinkerwayApp::connect_compose(&app, &compose, window, cx);
                     TinkerwayApp::connect_body(&app, &body, cx);
-                    app
+                    app_slot = Some(app.clone());
+                    cx.new(|cx| Root::new(app, window, cx))
                 },
             )
             .unwrap();
 
+        let app = app_slot.expect("app");
         window
-            .update(cx, |view, window, cx| {
-                window.focus(&view.compose_input().focus_handle(cx));
+            .update(cx, |_root, window, cx| {
+                app.update(cx, |app, cx| {
+                    window.focus(&app.compose_input().focus_handle(cx));
+                });
                 cx.activate(true);
             })
             .unwrap();

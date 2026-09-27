@@ -6,15 +6,43 @@
 use std::ops::Range;
 
 use gpui::{
-    App, Bounds, Context, CursorStyle, ElementId, ElementInputHandler, Entity, EntityInputHandler,
-    FocusHandle, Focusable, GlobalElementId, LayoutId, MouseButton, MouseDownEvent, PaintQuad,
-    Pixels, Point, ShapedLine, SharedString, Style, TextRun, UTF16Selection, UnderlineStyle,
-    Window, actions, div, fill, hsla, point, prelude::*, px, relative, rgb, rgba, size, white,
+    actions, div, fill, hsla, point, prelude::*, px, relative, rgb, rgba, size, white, App, Bounds,
+    ClipboardItem, Context, CursorStyle, ElementId, ElementInputHandler, Entity,
+    EntityInputHandler, FocusHandle, Focusable, GlobalElementId, LayoutId, MouseButton,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, ShapedLine,
+    SharedString, Style, TextRun, UTF16Selection, UnderlineStyle, Window,
 };
 
 actions!(
     text_input,
-    [Backspace, Delete, Left, Right, Home, End, Submit, Newline]
+    [
+        Backspace,
+        Delete,
+        Left,
+        Right,
+        Up,
+        Down,
+        Home,
+        End,
+        Submit,
+        Newline,
+        SelectLeft,
+        SelectRight,
+        SelectUp,
+        SelectDown,
+        SelectHome,
+        SelectEnd,
+        SelectAll,
+        WordLeft,
+        WordRight,
+        SelectWordLeft,
+        SelectWordRight,
+        DeleteWordLeft,
+        DeleteToLineStart,
+        Copy,
+        Cut,
+        Paste,
+    ]
 );
 
 pub struct TextInput {
@@ -23,12 +51,21 @@ pub struct TextInput {
     placeholder: SharedString,
     selected_range: Range<usize>,
     selection_reversed: bool,
+    /// Horizontal aim for Up and Down, so the caret stays in the same column.
+    preferred_x: Option<Pixels>,
+    /// True while the pointer button is down and a drag should extend the selection.
+    is_selecting: bool,
     marked_range: Option<Range<usize>>,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
     last_lines: Vec<(Range<usize>, ShapedLine)>,
+    last_line_height: Pixels,
     multiline: bool,
     min_lines: usize,
+    /// Drop the field chrome so a parent surface can be the writing area.
+    bare: bool,
+    text_px: f32,
+    line_px: f32,
     /// Returns `true` when the parent accepted the text (e.g. note created).
     /// `TextInput::submit` clears on `self` after success — do not nest
     /// `entity.update` on this input from inside the callback.
@@ -45,12 +82,18 @@ impl TextInput {
             placeholder: placeholder.into(),
             selected_range: 0..0,
             selection_reversed: false,
+            preferred_x: None,
+            is_selecting: false,
             marked_range: None,
             last_layout: None,
             last_bounds: None,
             last_lines: Vec::new(),
+            last_line_height: px(22.),
             multiline: false,
             min_lines: 1,
+            bare: false,
+            text_px: 15.,
+            line_px: 22.,
             on_submit: None,
             on_change: None,
         }
@@ -59,6 +102,19 @@ impl TextInput {
     pub fn multiline(mut self, min_lines: usize) -> Self {
         self.multiline = true;
         self.min_lines = min_lines.max(1);
+        self
+    }
+
+    /// Render text only. The parent draws the surface.
+    pub fn bare(mut self) -> Self {
+        self.bare = true;
+        self
+    }
+
+    /// Set the text size and line height in pixels.
+    pub fn text_px(mut self, size: f32, line: f32) -> Self {
+        self.text_px = size;
+        self.line_px = line;
         self
     }
 
@@ -71,6 +127,7 @@ impl TextInput {
         let len = self.content.len();
         self.selected_range = len..len;
         self.selection_reversed = false;
+        self.preferred_x = None;
         self.marked_range = None;
         cx.notify();
     }
@@ -79,6 +136,7 @@ impl TextInput {
         self.content = "".into();
         self.selected_range = 0..0;
         self.selection_reversed = false;
+        self.preferred_x = None;
         self.marked_range = None;
         cx.notify();
     }
@@ -106,29 +164,114 @@ impl TextInput {
     }
 
     fn home(&mut self, _: &Home, _: &mut Window, cx: &mut Context<Self>) {
-        if self.multiline {
-            let cursor = self.cursor_offset();
-            let line_start = self.content[..cursor]
-                .rfind('\n')
-                .map(|i| i + 1)
-                .unwrap_or(0);
-            self.move_to(line_start, cx);
-        } else {
-            self.move_to(0, cx);
-        }
+        self.move_to(self.line_start(self.cursor_offset()), cx);
     }
 
     fn end(&mut self, _: &End, _: &mut Window, cx: &mut Context<Self>) {
-        if self.multiline {
-            let cursor = self.cursor_offset();
-            let line_end = self.content[cursor..]
-                .find('\n')
-                .map(|i| cursor + i)
-                .unwrap_or(self.content.len());
-            self.move_to(line_end, cx);
-        } else {
-            self.move_to(self.content.len(), cx);
+        self.move_to(self.line_end(self.cursor_offset()), cx);
+    }
+
+    fn up(&mut self, _: &Up, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_vertical(-1, false, cx);
+    }
+
+    fn down(&mut self, _: &Down, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_vertical(1, false, cx);
+    }
+
+    fn select_left(&mut self, _: &SelectLeft, _: &mut Window, cx: &mut Context<Self>) {
+        self.select_to(self.previous_boundary(self.cursor_offset()), cx);
+    }
+
+    fn select_right(&mut self, _: &SelectRight, _: &mut Window, cx: &mut Context<Self>) {
+        self.select_to(self.next_boundary(self.cursor_offset()), cx);
+    }
+
+    fn select_up(&mut self, _: &SelectUp, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_vertical(-1, true, cx);
+    }
+
+    fn select_down(&mut self, _: &SelectDown, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_vertical(1, true, cx);
+    }
+
+    fn select_home(&mut self, _: &SelectHome, _: &mut Window, cx: &mut Context<Self>) {
+        self.select_to(self.line_start(self.cursor_offset()), cx);
+    }
+
+    fn select_end(&mut self, _: &SelectEnd, _: &mut Window, cx: &mut Context<Self>) {
+        self.select_to(self.line_end(self.cursor_offset()), cx);
+    }
+
+    fn select_all(&mut self, _: &SelectAll, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_to(0, cx);
+        self.select_to(self.content.len(), cx);
+    }
+
+    fn word_left(&mut self, _: &WordLeft, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_to(self.previous_word(self.cursor_offset()), cx);
+    }
+
+    fn word_right(&mut self, _: &WordRight, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_to(self.next_word(self.cursor_offset()), cx);
+    }
+
+    fn select_word_left(&mut self, _: &SelectWordLeft, _: &mut Window, cx: &mut Context<Self>) {
+        self.select_to(self.previous_word(self.cursor_offset()), cx);
+    }
+
+    fn select_word_right(&mut self, _: &SelectWordRight, _: &mut Window, cx: &mut Context<Self>) {
+        self.select_to(self.next_word(self.cursor_offset()), cx);
+    }
+
+    fn delete_word_left(
+        &mut self,
+        _: &DeleteWordLeft,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.selected_range.is_empty() {
+            self.select_to(self.previous_word(self.cursor_offset()), cx);
         }
+        self.replace_text_in_range(None, "", window, cx);
+    }
+
+    fn delete_to_line_start(
+        &mut self,
+        _: &DeleteToLineStart,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.selected_range.is_empty() {
+            self.select_to(self.line_start(self.cursor_offset()), cx);
+        }
+        self.replace_text_in_range(None, "", window, cx);
+    }
+
+    fn copy(&mut self, _: &Copy, _: &mut Window, cx: &mut Context<Self>) {
+        if self.selected_range.is_empty() {
+            return;
+        }
+        cx.write_to_clipboard(ClipboardItem::new_string(
+            self.content[self.selected_range.clone()].to_string(),
+        ));
+    }
+
+    fn cut(&mut self, _: &Cut, window: &mut Window, cx: &mut Context<Self>) {
+        if self.selected_range.is_empty() {
+            return;
+        }
+        cx.write_to_clipboard(ClipboardItem::new_string(
+            self.content[self.selected_range.clone()].to_string(),
+        ));
+        self.replace_text_in_range(None, "", window, cx);
+    }
+
+    fn paste(&mut self, _: &Paste, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) else {
+            return;
+        };
+        self.replace_text_in_range(None, &text, window, cx);
     }
 
     fn backspace(&mut self, _: &Backspace, window: &mut Window, cx: &mut Context<Self>) {
@@ -166,13 +309,43 @@ impl TextInput {
     fn on_mouse_down(
         &mut self,
         event: &MouseDownEvent,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.move_to(self.index_for_mouse_position(event.position), cx);
+        window.focus(&self.focus_handle);
+        let offset = self.index_for_mouse_position(event.position);
+        if event.click_count >= 3 {
+            self.is_selecting = false;
+            self.select_line_at(offset, cx);
+        } else if event.click_count == 2 {
+            self.is_selecting = false;
+            self.select_word_at(offset, cx);
+        } else if event.modifiers.shift {
+            self.is_selecting = true;
+            self.select_to(offset, cx);
+        } else {
+            self.is_selecting = true;
+            self.move_to(offset, cx);
+        }
+    }
+
+    fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, _: &mut Context<Self>) {
+        self.is_selecting = false;
+    }
+
+    fn on_mouse_move(&mut self, event: &MouseMoveEvent, _: &mut Window, cx: &mut Context<Self>) {
+        if !event.dragging() {
+            self.is_selecting = false;
+            return;
+        }
+        if self.is_selecting {
+            self.select_to(self.index_for_mouse_position(event.position), cx);
+        }
     }
 
     fn move_to(&mut self, offset: usize, cx: &mut Context<Self>) {
+        self.preferred_x = None;
+        self.selection_reversed = false;
         self.selected_range = offset..offset;
         cx.notify();
     }
@@ -193,10 +366,17 @@ impl TextInput {
             return 0;
         };
         if self.multiline && !self.last_lines.is_empty() {
-            let n = self.last_lines.len().max(1) as f32;
-            let line_h = f32::from(bounds.size.height) / n;
+            if position.y < bounds.top() {
+                return 0;
+            }
+            let line_h = f32::from(self.last_line_height).max(1.);
             let rel_y = f32::from((position.y - bounds.top()).max(px(0.)));
             let line_idx = (rel_y / line_h).floor().max(0.0) as usize;
+            let text_lines = self.content.split('\n').count().max(1);
+            // A click under the last written line stays on that line.
+            if position.y > bounds.bottom() || line_idx >= text_lines {
+                return self.content.len();
+            }
             let line_idx = line_idx.min(self.last_lines.len() - 1);
             let (range, line) = &self.last_lines[line_idx];
             let local_x = position.x - bounds.left();
@@ -216,6 +396,7 @@ impl TextInput {
     }
 
     fn select_to(&mut self, offset: usize, cx: &mut Context<Self>) {
+        self.preferred_x = None;
         if self.selection_reversed {
             self.selected_range.start = offset;
         } else {
@@ -225,7 +406,162 @@ impl TextInput {
             self.selection_reversed = !self.selection_reversed;
             self.selected_range = self.selected_range.end..self.selected_range.start;
         }
+        if self.selected_range.start == self.selected_range.end {
+            self.selection_reversed = false;
+        }
         cx.notify();
+    }
+
+    fn move_vertical(&mut self, delta: isize, selecting: bool, cx: &mut Context<Self>) {
+        if self.last_lines.is_empty() {
+            let target = if delta < 0 { 0 } else { self.content.len() };
+            if selecting {
+                self.select_to(target, cx);
+            } else {
+                self.move_to(target, cx);
+            }
+            return;
+        }
+        let cursor = self.cursor_offset();
+        let line_idx = self
+            .last_lines
+            .iter()
+            .position(|(range, _)| cursor <= range.end)
+            .unwrap_or(self.last_lines.len() - 1);
+        let (range, line) = &self.last_lines[line_idx];
+        let local = cursor.saturating_sub(range.start).min(line.len());
+        let x = self.preferred_x.unwrap_or_else(|| line.x_for_index(local));
+        let next =
+            (line_idx as isize + delta).clamp(0, self.last_lines.len() as isize - 1) as usize;
+        if next == line_idx {
+            self.preferred_x = Some(x);
+            return;
+        }
+        let (next_range, next_line) = &self.last_lines[next];
+        let local_next = next_line.closest_index_for_x(x);
+        let offset = (next_range.start + local_next).min(next_range.end);
+        if selecting {
+            self.select_to(offset, cx);
+        } else {
+            self.move_to(offset, cx);
+        }
+        self.preferred_x = Some(x);
+    }
+
+    fn line_start(&self, offset: usize) -> usize {
+        let offset = offset.min(self.content.len());
+        if self.multiline {
+            self.content[..offset]
+                .rfind('\n')
+                .map(|index| index + 1)
+                .unwrap_or(0)
+        } else {
+            0
+        }
+    }
+
+    fn line_end(&self, offset: usize) -> usize {
+        let offset = offset.min(self.content.len());
+        if self.multiline {
+            self.content[offset..]
+                .find('\n')
+                .map(|index| offset + index)
+                .unwrap_or(self.content.len())
+        } else {
+            self.content.len()
+        }
+    }
+
+    fn select_word_at(&mut self, offset: usize, cx: &mut Context<Self>) {
+        let len = self.content.len();
+        if len == 0 {
+            return;
+        }
+        let mut probe = offset.min(len);
+        if probe == len {
+            probe = self.previous_boundary(probe);
+        }
+        let Some(ch) = self.content[probe..].chars().next() else {
+            return;
+        };
+        let kind = word_kind(ch);
+        let mut start = probe;
+        while start > 0 {
+            let prev = self.previous_boundary(start);
+            let prev_ch = self.content[prev..start].chars().next().unwrap();
+            if word_kind(prev_ch) != kind {
+                break;
+            }
+            start = prev;
+        }
+        let mut end = self.next_boundary(probe);
+        while end < len {
+            let next_ch = self.content[end..].chars().next().unwrap();
+            if word_kind(next_ch) != kind {
+                break;
+            }
+            end = self.next_boundary(end);
+        }
+        self.preferred_x = None;
+        self.selection_reversed = false;
+        self.selected_range = start..end;
+        cx.notify();
+    }
+
+    fn select_line_at(&mut self, offset: usize, cx: &mut Context<Self>) {
+        let offset = offset.min(self.content.len());
+        let start = self.line_start(offset);
+        let mut end = self.line_end(offset);
+        if self.content.as_bytes().get(end) == Some(&b'\n') {
+            end += 1;
+        }
+        self.preferred_x = None;
+        self.selection_reversed = false;
+        self.selected_range = start..end;
+        cx.notify();
+    }
+
+    fn previous_word(&self, offset: usize) -> usize {
+        let mut index = offset.min(self.content.len());
+        while index > 0 {
+            let prev = self.previous_boundary(index);
+            let ch = self.content[prev..index].chars().next().unwrap();
+            if is_word_char(ch) {
+                break;
+            }
+            index = prev;
+        }
+        while index > 0 {
+            let prev = self.previous_boundary(index);
+            let ch = self.content[prev..index].chars().next().unwrap();
+            if !is_word_char(ch) {
+                break;
+            }
+            index = prev;
+        }
+        index
+    }
+
+    fn next_word(&self, offset: usize) -> usize {
+        let len = self.content.len();
+        let mut index = offset.min(len);
+        while index < len {
+            let next = self.next_boundary(index);
+            let ch = self.content[index..next].chars().next().unwrap();
+            if is_word_char(ch) {
+                break;
+            }
+            index = next;
+        }
+        while index < len {
+            let next = self.next_boundary(index);
+            let ch = self.content[index..next].chars().next().unwrap();
+            if !is_word_char(ch) {
+                break;
+            }
+            index = next;
+        }
+        index
     }
 
     fn offset_from_utf16(&self, offset: usize) -> usize {
@@ -275,6 +611,20 @@ impl TextInput {
             .char_indices()
             .find_map(|(idx, _)| (idx > offset).then_some(idx))
             .unwrap_or(self.content.len())
+    }
+}
+
+fn is_word_char(ch: char) -> bool {
+    ch.is_alphanumeric() || ch == '_'
+}
+
+fn word_kind(ch: char) -> u8 {
+    if is_word_char(ch) {
+        0
+    } else if ch.is_whitespace() {
+        1
+    } else {
+        2
     }
 }
 
@@ -340,6 +690,8 @@ impl EntityInputHandler for TextInput {
             (self.content[0..range.start].to_owned() + &new_text + &self.content[range.end..])
                 .into();
         self.selected_range = range.start + new_text.len()..range.start + new_text.len();
+        self.selection_reversed = false;
+        self.preferred_x = None;
         self.marked_range.take();
         self.emit_change(window, cx);
         cx.notify();
@@ -390,17 +742,28 @@ impl EntityInputHandler for TextInput {
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<Bounds<Pixels>> {
-        let last_layout = self.last_layout.as_ref()?;
         let range = self.range_from_utf16(&range_utf16);
+        let line_h = self.last_line_height;
+        let (line_idx, span, line) =
+            self.last_lines
+                .iter()
+                .enumerate()
+                .find_map(|(idx, (span, line))| {
+                    (range.start >= span.start && range.start <= span.end)
+                        .then_some((idx, span, line))
+                })?;
+        let local_start = range.start.saturating_sub(span.start).min(line.len());
+        let local_end = range
+            .end
+            .min(span.end)
+            .saturating_sub(span.start)
+            .min(line.len());
+        let x0 = line.x_for_index(local_start);
+        let x1 = line.x_for_index(local_end);
+        let y = bounds.top() + line_h * line_idx as f32;
         Some(Bounds::from_corners(
-            point(
-                bounds.left() + last_layout.x_for_index(range.start.min(last_layout.len())),
-                bounds.top(),
-            ),
-            point(
-                bounds.left() + last_layout.x_for_index(range.end.min(last_layout.len())),
-                bounds.bottom(),
-            ),
+            point(bounds.left() + x0, y),
+            point(bounds.left() + x1.max(x0 + px(1.)), y + line_h),
         ))
     }
 
@@ -410,9 +773,7 @@ impl EntityInputHandler for TextInput {
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<usize> {
-        let line_point = self.last_bounds?.localize(&point)?;
-        let layout = self.last_layout.as_ref()?;
-        Some(self.offset_to_utf16(layout.closest_index_for_x(line_point.x)))
+        Some(self.offset_to_utf16(self.index_for_mouse_position(point)))
     }
 }
 
@@ -423,7 +784,7 @@ struct FieldElement {
 struct PrepaintState {
     lines: Vec<(Range<usize>, ShapedLine)>,
     cursor: Option<PaintQuad>,
-    selection: Option<PaintQuad>,
+    selection: Vec<PaintQuad>,
     line_height: Pixels,
 }
 
@@ -546,10 +907,7 @@ impl Element for FieldElement {
                     &[run],
                     None,
                 );
-                let at = shaped_lines
-                    .last()
-                    .map(|(r, _)| r.end)
-                    .unwrap_or(0);
+                let at = shaped_lines.last().map(|(r, _)| r.end).unwrap_or(0);
                 shaped_lines.push((at..at, line));
             }
         } else {
@@ -594,64 +952,87 @@ impl Element for FieldElement {
         }
 
         let mut cursor_quad = None;
-        let mut selection_quad = None;
+        let mut selection = Vec::new();
         if !is_empty {
-            if selected_range.is_empty() {
+            if !selected_range.is_empty() {
+                let field_width = bounds.size.width;
                 for (line_idx, (range, line)) in shaped_lines.iter().enumerate() {
-                    if cursor >= range.start && cursor <= range.end {
-                        let local = cursor - range.start;
-                        let x = line.x_for_index(local);
-                        cursor_quad = Some(fill(
-                            Bounds::new(
-                                point(
-                                    bounds.left() + x,
-                                    bounds.top() + line_height * line_idx as f32,
-                                ),
-                                size(px(2.), line_height),
-                            ),
-                            rgb(0x1a1a1a),
-                        ));
-                        break;
+                    let has_newline = content.as_bytes().get(range.end) == Some(&b'\n');
+                    let covered_end = if has_newline {
+                        range.end + 1
+                    } else {
+                        range.end
+                    };
+                    if selected_range.end <= range.start || selected_range.start >= covered_end {
+                        continue;
                     }
-                    // cursor on the newline between lines
-                    if cursor == range.end + 1
-                        && line_idx + 1 < shaped_lines.len()
-                        && content.as_bytes().get(range.end) == Some(&b'\n')
-                    {
-                        cursor_quad = Some(fill(
-                            Bounds::new(
-                                point(
-                                    bounds.left(),
-                                    bounds.top() + line_height * (line_idx + 1) as f32,
-                                ),
-                                size(px(2.), line_height),
-                            ),
-                            rgb(0x1a1a1a),
-                        ));
-                        break;
-                    }
+                    let local_start = selected_range
+                        .start
+                        .saturating_sub(range.start)
+                        .min(line.len());
+                    let local_end = selected_range
+                        .end
+                        .min(range.end)
+                        .saturating_sub(range.start)
+                        .min(line.len());
+                    let x0 = line.x_for_index(local_start);
+                    let extend = has_newline && selected_range.end > range.end;
+                    let x1 = if extend {
+                        field_width
+                    } else {
+                        line.x_for_index(local_end)
+                    };
+                    let right = if x1 > x0 { x1 } else { x0 + px(8.) };
+                    let y = bounds.top() + line_height * line_idx as f32;
+                    selection.push(fill(
+                        Bounds::from_corners(
+                            point(bounds.left() + x0, y),
+                            point(bounds.left() + right, y + line_height),
+                        ),
+                        rgba(0x4a61704d),
+                    ));
                 }
-            } else if let Some((_, first_line)) = shaped_lines.first() {
-                // Simple single-band selection for first line overlap (good enough for demo).
-                let start = selected_range.start.min(first_line.len());
-                let end = selected_range.end.min(first_line.len());
-                selection_quad = Some(fill(
-                    Bounds::from_corners(
-                        point(
-                            bounds.left() + first_line.x_for_index(start),
-                            bounds.top(),
+            }
+            for (line_idx, (range, line)) in shaped_lines.iter().enumerate() {
+                if cursor >= range.start && cursor <= range.end {
+                    let local = cursor - range.start;
+                    let x = line.x_for_index(local);
+                    cursor_quad = Some(fill(
+                        Bounds::new(
+                            point(
+                                bounds.left() + x,
+                                bounds.top() + line_height * line_idx as f32,
+                            ),
+                            size(px(2.), line_height),
                         ),
-                        point(
-                            bounds.left() + first_line.x_for_index(end),
-                            bounds.top() + line_height,
+                        rgb(0x1a1a1a),
+                    ));
+                    break;
+                }
+                // cursor on the newline between lines
+                if cursor == range.end + 1
+                    && line_idx + 1 < shaped_lines.len()
+                    && content.as_bytes().get(range.end) == Some(&b'\n')
+                {
+                    cursor_quad = Some(fill(
+                        Bounds::new(
+                            point(
+                                bounds.left(),
+                                bounds.top() + line_height * (line_idx + 1) as f32,
+                            ),
+                            size(px(2.), line_height),
                         ),
-                    ),
-                    rgba(0x3366ff40),
-                ));
+                        rgb(0x1a1a1a),
+                    ));
+                    break;
+                }
             }
         } else {
             cursor_quad = Some(fill(
-                Bounds::new(point(bounds.left(), bounds.top()), size(px(2.), line_height)),
+                Bounds::new(
+                    point(bounds.left(), bounds.top()),
+                    size(px(2.), line_height),
+                ),
                 rgb(0x1a1a1a),
             ));
         }
@@ -659,7 +1040,7 @@ impl Element for FieldElement {
         PrepaintState {
             lines: shaped_lines,
             cursor: cursor_quad,
-            selection: selection_quad,
+            selection,
             line_height,
         }
     }
@@ -680,8 +1061,8 @@ impl Element for FieldElement {
             ElementInputHandler::new(bounds, self.input.clone()),
             cx,
         );
-        if let Some(selection) = prepaint.selection.take() {
-            window.paint_quad(selection);
+        for quad in prepaint.selection.drain(..) {
+            window.paint_quad(quad);
         }
         let lines = std::mem::take(&mut prepaint.lines);
         for (line_idx, (_range, line)) in lines.iter().enumerate() {
@@ -689,7 +1070,8 @@ impl Element for FieldElement {
                 bounds.left(),
                 bounds.top() + prepaint.line_height * line_idx as f32,
             );
-            line.paint(origin, prepaint.line_height, window, cx).unwrap();
+            line.paint(origin, prepaint.line_height, window, cx)
+                .unwrap();
         }
         if focus_handle.is_focused(window) {
             if let Some(cursor) = prepaint.cursor.take() {
@@ -701,6 +1083,7 @@ impl Element for FieldElement {
             input.last_layout = primary;
             input.last_bounds = Some(bounds);
             input.last_lines = lines;
+            input.last_line_height = prepaint.line_height;
         });
     }
 }
@@ -712,6 +1095,9 @@ impl Render for TextInput {
         } else {
             "LineInput"
         };
+        let text_px = self.text_px;
+        let line_px = self.line_px;
+        let bare = self.bare;
         div()
             .flex()
             .key_context(context)
@@ -721,24 +1107,45 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::delete))
             .on_action(cx.listener(Self::left))
             .on_action(cx.listener(Self::right))
+            .on_action(cx.listener(Self::up))
+            .on_action(cx.listener(Self::down))
             .on_action(cx.listener(Self::home))
             .on_action(cx.listener(Self::end))
+            .on_action(cx.listener(Self::select_left))
+            .on_action(cx.listener(Self::select_right))
+            .on_action(cx.listener(Self::select_up))
+            .on_action(cx.listener(Self::select_down))
+            .on_action(cx.listener(Self::select_home))
+            .on_action(cx.listener(Self::select_end))
+            .on_action(cx.listener(Self::select_all))
+            .on_action(cx.listener(Self::word_left))
+            .on_action(cx.listener(Self::word_right))
+            .on_action(cx.listener(Self::select_word_left))
+            .on_action(cx.listener(Self::select_word_right))
+            .on_action(cx.listener(Self::delete_word_left))
+            .on_action(cx.listener(Self::delete_to_line_start))
+            .on_action(cx.listener(Self::copy))
+            .on_action(cx.listener(Self::cut))
+            .on_action(cx.listener(Self::paste))
             .on_action(cx.listener(Self::submit))
             .on_action(cx.listener(Self::newline))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
-            .bg(white())
-            .border_1()
-            .border_color(rgb(0xcccccc))
-            .rounded_md()
-            .px_3()
-            .py_2()
-            .w_full()
-            .line_height(px(22.))
-            .text_size(px(15.))
-            .text_color(rgb(0x1a1a1a))
-            .child(FieldElement {
-                input: cx.entity(),
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::on_mouse_up))
+            .on_mouse_move(cx.listener(Self::on_mouse_move))
+            .when(!bare, |this| {
+                this.bg(white())
+                    .border_1()
+                    .border_color(rgb(0xcccccc))
+                    .rounded_md()
+                    .px_3()
+                    .py_2()
             })
+            .w_full()
+            .when(bare, |this| this.flex_col().min_h_full())
+            .line_height(px(line_px))
+            .text_size(px(text_px))
+            .text_color(rgb(0x142a3a))
+            .child(FieldElement { input: cx.entity() })
     }
 }
 

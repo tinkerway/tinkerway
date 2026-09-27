@@ -6,7 +6,7 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 
 ## App
 
-Private notes (Demo v1): multi-line compose → encrypted `.tw` vault (OS keystore master key) → list/open/edit with debounced autosave. Desktop app under [`app/`](app/) (Rust + [GPUI](https://gpui.rs)); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no GPUI. See [`app/README.md`](app/README.md) to run on Mac (Xcode / Metal) or Linux / Cursor cloud VMs (Vulkan lavapipe + Secret Service or XDG key file). Norms: [`docs/`](docs/).
+Capture a thought (Demo v1): you type, it stays in the list, and an older line opens so you can read it. You cannot change an older line. The words are sealed in an encrypted `.tw` vault (OS keystore master key). Desktop app under [`app/`](app/) (Rust + [GPUI](https://gpui.rs)); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no GPUI. See [`app/README.md`](app/README.md) to run on Mac (Xcode / Metal) or Linux / Cursor cloud VMs (Vulkan lavapipe + Secret Service or XDG key file). Norms: [`docs/`](docs/).
 
 ## Housekeeping
 
