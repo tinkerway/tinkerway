@@ -1,4 +1,4 @@
-/* Demo v1 capture (Tauri explore). Draft stays off the list until Send.
+/* Demo v1 capture (Tauri). Draft stays off the list until Send.
    Master key never crosses IPC. */
 
 const AUTOSAVE_MS = 400;

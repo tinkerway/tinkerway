@@ -10,7 +10,7 @@
 | Master key | **OS keystore**: macOS Keychain entry `ai.tinkerway.app` / `vault-master-key` (32-byte key, hex). On Linux: Secret Service / keyutils via the same `keyring` API; if unavailable, a **0600** XDG file `…/ai.tinkerway.app/master-key` (dev/cloud VM fallback only). Never store the key in the vault folder or the repo. |
 | Vault root | Application Support / XDG: `…/ai.tinkerway.app/vault/` via `directories`. |
 | Prefs / paths | Plaintext JSON OK later (theme, last-selected id, vault root). |
-| Plaintext in process | Only in tinkerway memory after unlock. |
+| Plaintext in process | Only in Rust host memory after unlock (Tauri commands return note DTOs; key never in the webview). |
 
 Threat model (v0): resist casual filesystem browse and sync/backup of vault files without leaking note text. Full Keychain/process-memory attacks are out of scope for now.
 

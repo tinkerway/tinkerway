@@ -1,6 +1,6 @@
 //! Encrypted note vault — AES-256-GCM envelopes (`.tw`) + Keychain master key.
 //!
-//! No GPUI dependency. The app shell calls these APIs; crypto and disk IO stay here.
+//! No UI dependency. The Tauri (or other) shell calls these APIs; crypto and disk IO stay here.
 
 mod crypto;
 mod keystore;

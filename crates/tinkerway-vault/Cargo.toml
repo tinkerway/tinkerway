@@ -3,7 +3,7 @@ name = "tinkerway-vault"
 version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-OSaasy"
-description = "Encrypted note vault IO — no GPUI"
+description = "Encrypted note vault IO — no UI framework"
 publish = false
 
 [dependencies]

@@ -3,7 +3,7 @@ name = "tinkerway"
 version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-OSaasy"
-description = "Tinkerway desktop app — capture a thought, then read it back"
+description = "Parked GPUI experiment — Demo v1 ships via tinkerway-tauri"
 publish = false
 
 [lib]

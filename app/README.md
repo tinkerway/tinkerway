@@ -1,12 +1,14 @@
-# tinkerway app
+# tinkerway app (parked GPUI experiment)
 
-Demo v1: capture a thought. It stays in the list. An older line opens so you can read it. You cannot change an older line. Words are sealed in an encrypted `.tw` vault with an OS keystore master key.
+**Not the Demo v1 default.** Shipping capture UI is Tauri: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md) (`MBX_DISABLE=1 cargo run -p tinkerway-tauri`).
+
+This crate keeps the former GPUI shell for reference. It is excluded from workspace `default-members` and from CI. You can still build it explicitly with `cargo run -p tinkerway`.
 
 Architecture, privacy, and notes UI norms: [`docs/`](../docs/).
 
 Licensed under the repo root [LICENSE](../LICENSE) (O'Saasy). Not open source.
 
-## Run (macOS)
+## Run (macOS) — parked
 
 You need a full Xcode install (not only Command Line Tools) so Metal / the macOS SDK are available. Point the active developer directory at Xcode if needed:
 

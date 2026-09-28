@@ -1,7 +1,7 @@
 [package]
 name = "tinkerway-tauri"
 version = "0.1.0"
-description = "Explore bake-off: Demo v1 capture shell on Tauri 2 (not the shipping GPUI app)"
+description = "Tinkerway Demo v1 — capture shell on Tauri 2 + system webview"
 edition = "2021"
 license = "LicenseRef-OSaasy"
 publish = false

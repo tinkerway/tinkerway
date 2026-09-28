@@ -1,6 +1,9 @@
 [workspace]
 resolver = "2"
 members = ["app", "apps/tinkerway-tauri", "crates/tinkerway-vault"]
+# Demo v1 ship path = Tauri + vault. GPUI `app/` stays in the workspace as a
+# parked experiment (`cargo run -p tinkerway`) but is not a default member.
+default-members = ["apps/tinkerway-tauri", "crates/tinkerway-vault"]
 
 [workspace.package]
 edition = "2021"

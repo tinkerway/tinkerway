@@ -1,4 +1,4 @@
-//! Tauri explore shell for Demo v1 capture.
+//! Tauri Demo v1 capture shell.
 //!
 //! Vault IO stays in `tinkerway-vault`. Commands return note DTOs only —
 //! never the master key or raw key material.

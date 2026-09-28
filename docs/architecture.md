@@ -2,37 +2,36 @@
 
 Normative layout for the tinkerway desktop app.
 
-## GPUI is UI only
+## Tauri is the Demo v1 UI shell
 
-[GPUI](https://gpui.rs) owns windows, views, Entities, and rendering. Domain logic, vault IO, paths, and crypto live in **plain Rust modules or crates** with **no GPUI types** in their public APIs. The shell calls those APIs (often via GPUI spawn/background), then updates UI state.
+[Tauri 2](https://v2.tauri.app/) owns the window and system webview. Domain logic, vault IO, paths, and crypto live in **plain Rust crates** with **no webview or Tauri types** in their public APIs. The shell calls vault APIs through `#[tauri::command]` handlers and returns note DTOs only — **never** the master key.
 
 ## No Rails-like native framework
 
-There is no batteries-included “Rails for GPUI desktop.” Web stacks (Loco, Axum+ORM, etc.) are the wrong shape. Good defaults = **Cargo workspace discipline** plus small, approved crates — not an application framework.
+There is no batteries-included “Rails for desktop.” Web stacks (Loco, Axum+ORM, etc.) are the wrong shape for the vault. Good defaults = **Cargo workspace discipline** plus small, approved crates — not an application framework.
 
 ## Workspace shape (DiskTree-style)
 
 ```text
 crates/
-  tinkerway-vault/   # encrypt, manifest, paths, migrate, Keychain — NO gpui
-app/                 # binary — GPUI shell, Entities, calls vault APIs
+  tinkerway-vault/     # encrypt, manifest, paths, migrate, Keychain — NO UI
 apps/
-  tinkerway-tauri/   # EXPLORE ONLY — Tauri 2 capture bake-off (not shipping)
+  tinkerway-tauri/     # Demo v1 ship binary — Tauri 2 + plain HTML/CSS/JS
+app/                   # PARKED — former GPUI experiment (not Demo v1 default)
 ```
 
-Mirror [DiskTree](https://github.com/tobi/disktree): correctness for vault/domain must be testable **without** a display or GPU. Prefer modules inside the vault crate over premature micro-crates.
+Mirror [DiskTree](https://github.com/tobi/disktree): correctness for vault/domain must be testable **without** a display or WebView. Prefer modules inside the vault crate over premature micro-crates.
 
-## Explore / bake-off (Tauri)
-
-`apps/tinkerway-tauri` is an intentional parallel shell to compare capture UX against GPUI. It reuses `tinkerway-vault` only (commands; no master key in the webview). **Shipping shell remains GPUI** until Rinas says otherwise. Run notes: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md).
+Default workspace members are `apps/tinkerway-tauri` and `crates/tinkerway-vault`. The GPUI `app/` crate remains in `members` so it still builds when asked (`cargo run -p tinkerway`) but is excluded from `default-members`.
 
 ## What not to do
 
-- Put vault seal/open or master keys in long-lived GPUI Entity fields beyond the unlocked session handle.
+- Pass the master key, key hex, or raw key material through IPC / into the webview.
+- Put vault seal/open in long-lived frontend state beyond unlocked session note DTOs.
 - Structure the notes product as an HTTP/ORM “model layer.”
-- Promote a second UI stack (Tauri, WebView, etc.) into the shipping path without an explicit decision — explore crates under `apps/` do not replace `app/`.
-- Nest `entity.update` on an entity from inside that entity’s own update (see `.cursor/rules/gpui.mdc`).
+- Add another UI stack (React/SvelteKit, a second shell) without an explicit decision.
+- Treat the parked GPUI `app/` crate as the shipping Demo v1 path.
 
 ## Run
 
-How to build and run the Mac shell: [`app/README.md`](../app/README.md).
+How to build and run Demo v1: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md).
