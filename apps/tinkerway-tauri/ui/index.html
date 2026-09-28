@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tinkerway</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <header class="chrome">
+        <button type="button" class="brand" id="btn-home" aria-label="Tinkerway home">
+          <img src="tinkerway-icon.png" width="32" height="32" alt="" />
+          <span class="brand-name">Tinkerway</span>
+        </button>
+      </header>
+
+      <main class="capture" aria-label="Capture">
+        <div id="feed-scroll" class="feed-scroll">
+          <ul id="feed" class="feed" aria-label="Sent captures"></ul>
+        </div>
+
+        <div class="compose-dock">
+          <textarea
+            id="compose"
+            class="compose"
+            placeholder="What's new?"
+            spellcheck="true"
+            rows="1"
+            autofocus
+          ></textarea>
+          <button
+            type="button"
+            class="send-arrow"
+            id="btn-send"
+            disabled
+            aria-label="Send"
+          >
+            <svg
+              class="send-icon"
+              viewBox="0 0 16 16"
+              width="16"
+              height="16"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M8 3.2 3.6 7.6l.9.9L7.3 5.7V12.8h1.4V5.7l2.8 2.8.9-.9z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <div
+      id="modal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      hidden
+    >
+      <div class="modal-backdrop" id="modal-backdrop"></div>
+      <div class="modal-panel">
+        <div class="modal-bar">
+          <h2 id="modal-title" class="modal-title"></h2>
+          <button type="button" class="modal-close" id="btn-modal-close" aria-label="Close">
+            ×
+          </button>
+        </div>
+        <div id="modal-body" class="modal-body"></div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,12 +1,23 @@
-# tinkerway
+# Tinkerway
 
 A home base for a maker, or a small team.
 
 You type whatever is in your head. The app keeps the context, turns it into an experiment or a project, and hands the next piece to a person or to a tool you already use. The home base is a folder of files you own.
 
+## App
+
+Capture a thought (Demo v1): type at the bottom, Send puts it in the feed above, tap a row to read it. Capture only — no folders, tags, or replies. The words are sealed in an encrypted `.tw` vault (OS keystore master key). Desktop shell under [`apps/tinkerway-tauri`](apps/tinkerway-tauri/) ([Tauri 2](https://v2.tauri.app/) + system webview + plain HTML/CSS/JS); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no UI types. Run: [`apps/tinkerway-tauri/README.md`](apps/tinkerway-tauri/README.md). Norms: [`docs/`](docs/).
+
+```bash
+mise install
+cargo run -p tinkerway-tauri
+```
+
+If Tauri ACL files go missing under mbx, use `MBX_DISABLE=1 cargo run -p tinkerway-tauri`.
+
 ## Housekeeping
 
-Secrets stay out of git: local hk + betterleaks (`mise install && hk install --mise`), CI betterleaks on push/PR/daily, and `.cursor/hooks` for agents.
+Secrets tooling (mise / hk / betterleaks): [`docs/dev-setup.md`](docs/dev-setup.md).
 
 The app demands the source be public because it is more personal with all the notes, context, and everything.
 

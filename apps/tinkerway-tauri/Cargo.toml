@@ -1,0 +1,23 @@
+[package]
+name = "tinkerway-tauri"
+version = "0.1.0"
+description = "Tinkerway Demo v1 — capture shell on Tauri 2 + system webview"
+edition = "2021"
+license = "LicenseRef-OSaasy"
+publish = false
+
+[lib]
+name = "tinkerway_tauri_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "tinkerway-tauri"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.5", default-features = true }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2.12", default-features = true }
+tinkerway-vault = { path = "../../crates/tinkerway-vault" }

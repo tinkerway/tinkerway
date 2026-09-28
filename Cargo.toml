@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["apps/tinkerway-tauri", "crates/tinkerway-vault"]
+default-members = ["apps/tinkerway-tauri", "crates/tinkerway-vault"]
+
+[workspace.package]
+edition = "2021"
+license = "LicenseRef-OSaasy"
