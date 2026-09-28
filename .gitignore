@@ -2,6 +2,8 @@
 
 # Rust
 target/
+# Machine-local SDK pin written by mise setup
+.cargo/config.toml
 
 # Xcode / Swift
 DerivedData/

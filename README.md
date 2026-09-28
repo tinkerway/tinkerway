@@ -9,7 +9,7 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 Capture a thought (Demo v1): you type, it stays in the list, and an older line opens so you can read it. You cannot change an older line. The words are sealed in an encrypted `.tw` vault (OS keystore master key). Desktop shell under [`apps/tinkerway-tauri`](apps/tinkerway-tauri/) ([Tauri 2](https://v2.tauri.app/) + system webview + plain HTML/CSS/JS); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no UI types. Run: [`apps/tinkerway-tauri/README.md`](apps/tinkerway-tauri/README.md). Norms: [`docs/`](docs/).
 
 ```bash
-mise install
+mise setup
 MBX_DISABLE=1 cargo run -p tinkerway-tauri
 ```
 

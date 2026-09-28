@@ -9,4 +9,4 @@ Short normative notes for the Tinkerway desktop app.
 | [notes-ui.md](./notes-ui.md) | Capture a thought, list it, open an older one to read |
 | [dev-setup.md](./dev-setup.md) | mise + hk + betterleaks, CI secrets scan, Cursor hooks |
 
-Run Demo v1: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md).
+First time: `mise setup`. Run Demo v1: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md).

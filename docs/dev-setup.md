@@ -4,6 +4,16 @@ Secrets stay out of git. Agents also have a short always-on reminder in [`.curso
 
 ## Local
 
+`mise.toml` needs mise **2026.9.2** or newer. Older mise does not ship `betterleaks` or `mr-boxington`, and `mise install` fails with "not found in mise tool registry". Update with `mise self-update -y`.
+
+First time, and again after a pull when tools change:
+
+```bash
+mise setup
+```
+
+Hooks only:
+
 ```bash
 mise install
 hk install --mise   # wires pre-commit via mise
