@@ -1,5 +1,5 @@
-/* Demo v1 capture (Tauri explore) — UI/behavior parity with GPUI app/src/home.rs.
-   Draft stays off the list until Send. Master key never crosses IPC. */
+/* Demo v1 capture (Tauri explore). Draft stays off the list until Send.
+   Master key never crosses IPC. */
 
 const AUTOSAVE_MS = 400;
 
@@ -216,7 +216,7 @@ async function send() {
 
 async function newCapture() {
   clearTimeout(saveTimer);
-  // Match GPUI start_new: save compose content if any, else leave open capture / shortcuts.
+  // Demo v1 New: save compose content if any, else leave open capture / shortcuts.
   if (el.compose.value.trim()) {
     await send();
     return;

@@ -2,7 +2,7 @@
 
 Parallel **Demo v1 capture** shell on [Tauri 2](https://v2.tauri.app/). Same encrypted vault as the GPUI app (`tinkerway-vault`). **Not** the shipping UI — see [PR #1](https://github.com/tinkerway/tinkerway/pull/1) for GPUI.
 
-- Window ~1200×800: compose left, library right (420px), mist card + Send pill, New, read-only View, Shortcuts page — **UI/behavior parity with GPUI Demo v1** for a fair bake-off.
+- Window ~1200×800: compose left, library right (420px), mist card + Send pill, New, read-only View, Shortcuts page — Demo v1 capture chrome for the shell bake-off.
 - Draft stays off the list until Send. Hold Cmd/Ctrl shows chords on Send / New.
 - Commands only; the webview never receives the master key.
 

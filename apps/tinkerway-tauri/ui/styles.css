@@ -1,4 +1,4 @@
-/* Match GPUI Demo v1 capture chrome (app/src/home.rs). */
+/* Demo v1 capture chrome (Tauri explore). */
 
 :root {
   --mist: #f7fbfc;
@@ -130,7 +130,7 @@ body {
 }
 
 .write-card {
-  /* Writing: no border — soft mist only (GPUI). */
+  /* Writing: no border — soft mist only. */
   border: 0;
 }
 
