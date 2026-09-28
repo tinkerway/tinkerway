@@ -27,12 +27,52 @@ let animateId = null;
 const bodyCache = new Map();
 let modalClosing = false;
 
+/** In-memory mock when opened outside Tauri (browser preview / screenshots). */
+const mockVault = (() => {
+  /** @type {{ id: string, title: string, body: string, updatedUnix: number }[]} */
+  let notes = [];
+  let seq = 0;
+  function titleFrom(body) {
+    const line = String(body || "").trim().split(/\r?\n/)[0] || "Untitled";
+    return line.length > 48 ? line.slice(0, 48) : line;
+  }
+  return {
+    async list_notes() {
+      return notes
+        .map(({ id, title, updatedUnix }) => ({ id, title, updatedUnix }))
+        .sort((a, b) => b.updatedUnix - a.updatedUnix);
+    },
+    async read_note({ id }) {
+      const n = notes.find((x) => x.id === id);
+      if (!n) throw new Error("not found");
+      return { ...n };
+    },
+    async create_note({ body }) {
+      const id = `mock-${++seq}`;
+      notes.unshift({
+        id,
+        title: titleFrom(body),
+        body,
+        updatedUnix: Math.floor(Date.now() / 1000),
+      });
+      return id;
+    },
+    async update_note({ id, body }) {
+      const n = notes.find((x) => x.id === id);
+      if (!n) throw new Error("not found");
+      n.body = body;
+      n.title = titleFrom(body);
+      n.updatedUnix = Math.floor(Date.now() / 1000);
+    },
+  };
+})();
+
 function invoke(cmd, args = {}) {
   const core = window.__TAURI__?.core;
-  if (!core?.invoke) {
-    return Promise.reject(new Error("Tauri IPC unavailable"));
-  }
-  return core.invoke(cmd, args);
+  if (core?.invoke) return core.invoke(cmd, args);
+  const fn = mockVault[cmd];
+  if (!fn) return Promise.reject(new Error(`unknown command: ${cmd}`));
+  return fn(args);
 }
 
 function whenLabel(updatedUnix) {
