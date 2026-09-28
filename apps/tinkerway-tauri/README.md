@@ -1,6 +1,6 @@
 # tinkerway-tauri
 
-**Demo v1 capture** on [Tauri 2](https://v2.tauri.app/): a messaging-shaped feed for private thoughts — compose at the bottom, sent items stack and scroll above. Capture only (no replies, folders, or tags). Same encrypted vault (`tinkerway-vault`); the master key stays in Rust and never reaches the webview.
+**Demo v1 capture** on [Tauri 2](https://v2.tauri.app/): a messaging-shaped feed for thoughts. Compose at the bottom; sent items stack and scroll above. Capture only (no replies, folders, or tags). Same encrypted vault (`tinkerway-vault`); the master key stays in Rust and never reaches the webview.
 
 ![Demo v1 capture](demo.png)
 
@@ -8,8 +8,10 @@ How to run:
 
 ```bash
 mise install
-MBX_DISABLE=1 cargo run -p tinkerway-tauri
+cargo run -p tinkerway-tauri
 ```
+
+If mise wraps Cargo with mbx and Tauri ACL permission files go missing, use the escape hatch: `MBX_DISABLE=1 cargo run -p tinkerway-tauri`.
 
 - Window ~1200×800: brand header, scrollable feed, growing compose + arrow Send.
 - **Enter** sends; **Shift+Enter** newline. Draft stays off the feed until Send.
@@ -24,15 +26,14 @@ Keychain + vault under `ai.tinkerway.app` (`vault-master-key`, Application Suppo
 
 ```bash
 mise install
-# mr-boxington can drop Tauri ACL permission files from the cache — disable for this crate.
-MBX_DISABLE=1 cargo run -p tinkerway-tauri
+cargo run -p tinkerway-tauri
 ```
 
 Optional (hot reload / CLI helpers):
 
 ```bash
 cargo install tauri-cli --version "^2" --locked
-MBX_DISABLE=1 cargo tauri dev --config apps/tinkerway-tauri/tauri.conf.json
+cargo tauri dev --config apps/tinkerway-tauri/tauri.conf.json
 ```
 
 ## Run (Linux / Cursor cloud VM)
@@ -51,10 +52,10 @@ Then:
 
 ```bash
 mise install
-MBX_DISABLE=1 cargo run -p tinkerway-tauri
+cargo run -p tinkerway-tauri
 ```
 
-CI on Ubuntu runs `cargo test -p tinkerway-vault` and `MBX_DISABLE=1 cargo check -p tinkerway-tauri` (WebKitGTK link deps installed; full GUI smoke is local / Mac).
+CI on Ubuntu caches Cargo with `Swatinem/rust-cache`, runs `cargo test -p tinkerway-vault`, and `MBX_DISABLE=1 cargo check -p tinkerway-tauri` (WebKitGTK link deps; full GUI smoke is local / Mac).
 
 ## Demo path
 

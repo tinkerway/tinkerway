@@ -1,7 +1,5 @@
-//! Tauri Demo v1 capture shell.
-//!
-//! Vault IO stays in `tinkerway-vault`. Commands return note DTOs only —
-//! never the master key or raw key material.
+//! Tauri Demo v1 capture shell. Vault IO stays in `tinkerway-vault`.
+//! Commands return note DTOs only — never the master key.
 
 use std::sync::Mutex;
 

@@ -82,12 +82,6 @@ pub fn migrate_legacy_workspace(
     Ok(report)
 }
 
-/// Detect whether a cwd-relative legacy plaintext workspace directory exists.
-#[allow(dead_code)]
-pub fn legacy_workspace_exists(cwd: &Path) -> bool {
-    cwd.join(LEGACY_WORKSPACE_DIR).is_dir()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

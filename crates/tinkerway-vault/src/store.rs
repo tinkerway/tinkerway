@@ -7,7 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use rand::RngCore;
 
-use crate::crypto::{self, MasterKey};
+use crate::crypto::{self, hex_encode, MasterKey};
 use crate::keystore::{self, KeystoreError};
 
 const MANIFEST_NAME: &str = "manifest.json";
@@ -449,16 +449,6 @@ fn now_unix() -> Result<u64, VaultError> {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
         .map_err(|e| VaultError::Io(io::Error::other(e)))
-}
-
-fn hex_encode(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut out = String::with_capacity(bytes.len() * 2);
-    for b in bytes {
-        out.push(HEX[(b >> 4) as usize] as char);
-        out.push(HEX[(b & 0xf) as usize] as char);
-    }
-    out
 }
 
 #[cfg(test)]

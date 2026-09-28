@@ -6,8 +6,8 @@ Demo v1 is **just capture** — no folders, tags, or auto-organization.
 
 ## Flows
 
-1. **Write** — Type in the field at the bottom. **Shift+Enter** inserts a newline; the field grows with the text. The draft stays off the feed until you **Send**.
-2. **Send** — **Enter** or the arrow button puts the words in the feed above and clears the field.
+1. **Write** — Type in the field at the bottom. **Shift+Enter** inserts a newline; the field grows with the text. Nothing is sealed until you **Send**.
+2. **Send** — **Enter** or the arrow button seals the thought into the vault, puts it in the feed above, and clears the field.
 3. **Read** — Click a row. Long captures are clamped to about three lines with an ellipsis; the full text opens in a modal titled with the item's timestamp (same quiet labels as the feed: Now, Today, Yesterday, weekday). **Esc** or the close control dismisses it.
 4. **Scroll** — The feed fills the space above compose and scrolls when there are many items. Compose stays pinned at the bottom.
 

@@ -19,6 +19,8 @@ mise run secrets-scan
 
 [`.github/workflows/secrets.yml`](../.github/workflows/secrets.yml) runs betterleaks on push to `main`, every PR, and daily.
 
+[`.github/workflows/rust.yml`](../.github/workflows/rust.yml) installs the mise toolchain, restores Cargo outputs with [`Swatinem/rust-cache`](https://github.com/Swatinem/rust-cache) (same action jdx/mise uses on GitHub-hosted runners), then runs vault tests and a Tauri `cargo check`.
+
 ## Cursor agents
 
 [`.cursor/hooks.json`](../.cursor/hooks.json) blocks `git commit` when staged secrets or sensitive paths appear (`failClosed`).

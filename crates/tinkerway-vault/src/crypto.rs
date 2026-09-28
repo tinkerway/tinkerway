@@ -102,7 +102,7 @@ pub fn open(key: &MasterKey, envelope: &[u8]) -> Result<Vec<u8>, CryptoError> {
         .map_err(|_| CryptoError::Decrypt)
 }
 
-fn hex_encode(bytes: &[u8]) -> String {
+pub(crate) fn hex_encode(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
     for b in bytes {

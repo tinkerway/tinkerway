@@ -1,8 +1,7 @@
 /* Demo v1 capture (Tauri). Messaging-shaped feed; capture-only (no replies).
-   Draft stays off the feed until Send. Master key never crosses IPC.
+   Draft stays in the compose field until Send. Master key never crosses IPC.
    Enter sends; Shift+Enter newline. */
 
-const AUTOSAVE_MS = 400;
 const MODAL_MS = 240;
 
 const el = {
@@ -18,10 +17,6 @@ const el = {
   btnModalClose: document.getElementById("btn-modal-close"),
 };
 
-/** @type {string | null} */
-let draftId = null;
-let saveTimer = null;
-let draftDirty = false;
 /** @type {string | null} */
 let animateId = null;
 /** @type {Map<string, string>} */
@@ -82,6 +77,7 @@ function whenLabel(updatedUnix) {
   if (age < 120) return "Now";
   if (age < 18 * 3600) return "Today";
   if (age < 42 * 3600) return "Yesterday";
+  // Unix day 0 was a Thursday.
   const days = [
     "Thursday",
     "Friday",
@@ -115,7 +111,6 @@ function openModal(body, updatedUnix) {
   el.modalBody.textContent = body || "";
   el.modal.classList.remove("hidden", "is-closing");
   el.modal.removeAttribute("hidden");
-  // Next frame so CSS transitions run from the closed state.
   requestAnimationFrame(() => {
     el.modal.classList.add("is-open");
   });
@@ -181,7 +176,7 @@ async function ensureBody(id) {
 async function refreshFeed() {
   const notes = await invoke("list_notes");
   // Vault returns newest-first; reverse so oldest→newest and newest sits above compose.
-  const visible = notes.filter((n) => !(draftId && n.id === draftId)).reverse();
+  const visible = [...notes].reverse();
 
   await Promise.all(
     visible.map(async (n) => {
@@ -205,29 +200,6 @@ async function refreshFeed() {
   scrollFeedToEnd();
 }
 
-async function flushDraft() {
-  if (!draftDirty) return;
-  const body = el.compose.value;
-  if (!body.trim()) {
-    draftDirty = false;
-    return;
-  }
-  if (draftId) {
-    await invoke("update_note", { id: draftId, body });
-  } else {
-    draftId = await invoke("create_note", { body });
-  }
-  draftDirty = false;
-}
-
-function scheduleSave() {
-  draftDirty = true;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    flushDraft().catch((err) => console.error("autosave", err));
-  }, AUTOSAVE_MS);
-}
-
 async function onOpenNote(id, updatedUnix) {
   try {
     const body = await ensureBody(id);
@@ -239,7 +211,6 @@ async function onOpenNote(id, updatedUnix) {
 
 function pulseSend() {
   el.btnSend.classList.remove("is-sending");
-  // Retrigger CSS animation.
   void el.btnSend.offsetWidth;
   el.btnSend.classList.add("is-sending");
   window.setTimeout(() => el.btnSend.classList.remove("is-sending"), 340);
@@ -249,17 +220,9 @@ async function send() {
   const body = el.compose.value;
   if (!body.trim()) return;
   pulseSend();
-  clearTimeout(saveTimer);
-  let id = draftId;
-  if (id) {
-    await invoke("update_note", { id, body });
-  } else {
-    id = await invoke("create_note", { body });
-  }
+  const id = await invoke("create_note", { body });
   bodyCache.set(id, body);
   animateId = id;
-  draftId = null;
-  draftDirty = false;
   el.compose.value = "";
   resizeCompose();
   updateSendEnabled();
@@ -270,7 +233,6 @@ async function send() {
 function onComposeInput() {
   updateSendEnabled();
   resizeCompose();
-  scheduleSave();
 }
 
 function onComposeKeyDown(e) {

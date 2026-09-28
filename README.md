@@ -10,8 +10,10 @@ Capture a thought (Demo v1): type at the bottom, Send puts it in the feed above,
 
 ```bash
 mise install
-MBX_DISABLE=1 cargo run -p tinkerway-tauri
+cargo run -p tinkerway-tauri
 ```
+
+If Tauri ACL files go missing under mbx, use `MBX_DISABLE=1 cargo run -p tinkerway-tauri`.
 
 ## Housekeeping
 
