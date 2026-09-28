@@ -1,14 +1,21 @@
 # tinkerway app (parked GPUI experiment)
 
-**Not the Demo v1 default.** Shipping capture UI is Tauri: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md) (`MBX_DISABLE=1 cargo run -p tinkerway-tauri`).
+**Not Demo v1.** Do not run this crate for the shipping capture demo.
 
-This crate keeps the former GPUI shell for reference. It is excluded from workspace `default-members` and from CI. You can still build it explicitly with `cargo run -p tinkerway`.
+Demo v1 ships on Tauri: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md)
 
-Architecture, privacy, and notes UI norms: [`docs/`](../docs/).
+```bash
+mise install
+MBX_DISABLE=1 cargo run -p tinkerway-tauri
+```
+
+This crate keeps the former GPUI shell for reference only. It is excluded from workspace `default-members` and from CI. Build it only when deliberately inspecting the parked experiment: `cargo run -p tinkerway`.
+
+Architecture, privacy, and notes UI norms: [`docs/`](../docs/) (written for the Tauri ship path).
 
 Licensed under the repo root [LICENSE](../LICENSE) (O'Saasy). Not open source.
 
-## Run (macOS) — parked
+## Run (macOS) — parked only
 
 You need a full Xcode install (not only Command Line Tools) so Metal / the macOS SDK are available. Point the active developer directory at Xcode if needed:
 
@@ -109,7 +116,9 @@ Vault root on Linux: `~/.local/share/ai.tinkerway.app/vault/`.
 
 Screenshots: `scrot` / `import` against `$DISPLAY`. Short recordings: `ffmpeg -f x11grab …`.
 
-## Demo path
+## Demo path (parked reference)
+
+Same capture flows as Demo v1 (draft off list until Send, read-only open, New / Shortcuts). The **shipping** UI and docs live under [`apps/tinkerway-tauri`](../apps/tinkerway-tauri/).
 
 1. Type a thought in the writing field (Enter = newline). It is saved as a draft. It does not appear in the list.
 2. Click **Send** or press **Command-Enter**. The thought appears in the list. The field clears.

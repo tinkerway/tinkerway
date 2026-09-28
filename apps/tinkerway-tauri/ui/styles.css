@@ -65,7 +65,6 @@ body {
 
 .brand img {
   display: block;
-  /* Transparent treatment — no rounded mask that fights the PNG. */
 }
 
 .brand-name {

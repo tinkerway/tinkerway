@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Tinkerway Capture (Tauri)",
+  "productName": "Tinkerway",
   "version": "0.1.0",
-  "identifier": "ai.tinkerway.tauri",
+  "identifier": "ai.tinkerway.app",
   "build": {
     "frontendDist": "./ui"
   },

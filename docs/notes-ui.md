@@ -6,7 +6,7 @@ The writing field is the live thought. An older line opens so you can read it. Y
 
 1. **Write** — Type in the field (Enter inserts a newline). The draft stays off the list until you **Send**. An empty field stays out of the list.
 2. **New** — **New** at the top right, or **Command-N**, returns to the writing field. **Send** or **Command-Enter** puts the words in the list and clears the field.
-3. **Read** — Click an older line. The words show in the field. You cannot change them. Click that line again to return to the writing field.
+3. **Read** — Click an older line. The words open in View (read-only). You cannot change them. Click that line again to return to the writing field.
 4. **Shortcuts** — Click **Shortcuts** at the bottom. In the writing field, **?** types a question mark. Press **Escape** to leave the field, then press **?** to open Shortcuts. Hold Command to see the shortcut keys on the screen you are already on.
 
 ## One source of structure

@@ -1,4 +1,5 @@
-//! tinkerway desktop app library — GPUI shell over tinkerway-vault.
+//! Parked GPUI experiment over `tinkerway-vault`.
+//! Demo v1 ships via `tinkerway-tauri` — not this crate.
 
 mod assets;
 mod home;

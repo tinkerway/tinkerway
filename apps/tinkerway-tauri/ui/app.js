@@ -93,6 +93,7 @@ function showShortcuts() {
   el.shortcuts.classList.remove("hidden");
   el.home.classList.add("hidden");
   el.breadcrumb.classList.remove("hidden");
+  el.breadcrumb.setAttribute("aria-hidden", "false");
   el.btnCloseShortcuts.classList.remove("hidden");
 }
 
@@ -100,6 +101,7 @@ function hideShortcuts() {
   el.shortcuts.classList.add("hidden");
   el.home.classList.remove("hidden");
   el.breadcrumb.classList.add("hidden");
+  el.breadcrumb.setAttribute("aria-hidden", "true");
   el.btnCloseShortcuts.classList.add("hidden");
 }
 

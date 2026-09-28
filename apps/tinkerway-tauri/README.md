@@ -17,7 +17,7 @@ Architecture: [`docs/architecture.md`](../../docs/architecture.md). Privacy: [`d
 
 ## Run (macOS)
 
-Same Keychain + vault path as before (`ai.tinkerway.app` / `vault-master-key`, Application Support vault). Full Xcode / Metal is **not** required (unlike the parked GPUI experiment). You need a normal Mac desktop WebView stack.
+Keychain + vault under `ai.tinkerway.app` (`vault-master-key`, Application Support vault). Full Xcode / Metal is **not** required (unlike the parked GPUI experiment). You need a normal Mac desktop WebView stack.
 
 ```bash
 mise install
