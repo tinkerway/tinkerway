@@ -11,12 +11,11 @@
     body {
       font-family: ui-sans-serif, system-ui, sans-serif;
       display: flex;
-      align-items: center;
       justify-content: center;
-      padding: 2.5rem 1.5rem;
+      padding: 2.5rem 1.5rem 3.5rem;
       box-sizing: border-box;
     }
-    main { width: min(28rem, 100%); }
+    main { width: min(40rem, 100%); }
     h1 {
       font-weight: 500;
       font-size: 1.25rem;
@@ -29,7 +28,18 @@
       letter-spacing: -0.03em;
       margin: 0 0 1.5rem;
     }
-    p { font-size: 1rem; line-height: 1.5; margin: 0 0 2rem; color: #444; }
+    p { font-size: 1rem; line-height: 1.5; margin: 0 0 1rem; color: #444; }
+    p.lead { margin-bottom: 1.5rem; color: #111; }
+    figure {
+      margin: 2rem 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #e6e6e6;
+    }
+    .links { margin-top: 2rem; }
     a { color: #111; }
   </style>
 </head>
@@ -37,8 +47,18 @@
   <main>
     <h1>tinkerway</h1>
     <p class="line">build something. anything. whatever you want.</p>
-    <p>A home base for a maker, or a small team. You type whatever is in your head. The app keeps the context and hands the next piece to a tool you already use.</p>
-    <a href="https://github.com/tinkerway/tinkerway">Source</a>
+    <p class="lead">A home base for a maker. Capture thoughts first. Organization later.</p>
+    <p>Demo v1 is a messaging-style private capture window. Type at the bottom. Send puts the thought in the feed above. Tap a row to read the full text.</p>
+    <p>Words stay on your machine. Tauri shell, Rust vault, encrypted local <code>.tw</code> files, key in the OS keychain. Nothing leaves the device for this demo.</p>
+    <figure>
+      <img
+        src="demo.png"
+        width="1183"
+        height="790"
+        alt="Tinkerway capture window: a thought in the feed and compose at the bottom"
+      >
+    </figure>
+    <p class="links"><a href="https://github.com/tinkerway/tinkerway">Source</a></p>
   </main>
 </body>
 </html>

@@ -13,7 +13,7 @@ MBX_DISABLE=1 cargo run -p tinkerway-tauri
 
 - Window ~1200×800: brand header, scrollable feed, growing compose + arrow Send.
 - **Enter** sends; **Shift+Enter** newline. Draft stays off the feed until Send.
-- Long rows clamp to ~3 lines; click opens a read-only modal (**Esc** / close).
+- Long rows clamp to ~3 lines; click opens a read-only modal titled with the item's timestamp (**Esc** / close).
 - Commands only; the webview never receives the master key.
 
 Architecture: [`docs/architecture.md`](../../docs/architecture.md). Privacy: [`docs/data-and-privacy.md`](../../docs/data-and-privacy.md). Capture UX: [`docs/notes-ui.md`](../../docs/notes-ui.md).
@@ -60,7 +60,7 @@ CI on Ubuntu runs `cargo test -p tinkerway-vault` and `MBX_DISABLE=1 cargo check
 
 1. Type in **What's new?** (**Shift+Enter** = newline; field grows). Draft stays off the feed until Send.
 2. **Enter** or the arrow — thought appears above; field clears.
-3. Click a clamped row → full text in a modal; **Esc** / × closes.
+3. Click a clamped row → full text in a modal with the timestamp; **Esc** / × closes.
 4. Feed scrolls when full; compose stays at the bottom.
 
 ## Workspace note

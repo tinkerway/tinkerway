@@ -13,6 +13,7 @@ const el = {
   btnHome: document.getElementById("btn-home"),
   modal: document.getElementById("modal"),
   modalBackdrop: document.getElementById("modal-backdrop"),
+  modalTitle: document.getElementById("modal-title"),
   modalBody: document.getElementById("modal-body"),
   btnModalClose: document.getElementById("btn-modal-close"),
 };
@@ -108,8 +109,9 @@ function isModalOpen() {
   return el.modal.classList.contains("is-open") && !el.modal.classList.contains("hidden");
 }
 
-function openModal(body) {
+function openModal(body, updatedUnix) {
   modalClosing = false;
+  el.modalTitle.textContent = whenLabel(updatedUnix);
   el.modalBody.textContent = body || "";
   el.modal.classList.remove("hidden", "is-closing");
   el.modal.removeAttribute("hidden");
@@ -129,6 +131,7 @@ function closeModal() {
     el.modal.classList.add("hidden");
     el.modal.classList.remove("is-closing");
     el.modal.setAttribute("hidden", "");
+    el.modalTitle.textContent = "";
     el.modalBody.textContent = "";
     modalClosing = false;
     el.compose.focus();
@@ -156,7 +159,7 @@ function makeRow(note, { animate } = {}) {
   meta.textContent = whenLabel(note.updatedUnix);
 
   btn.append(preview, meta);
-  btn.addEventListener("click", () => onOpenNote(note.id));
+  btn.addEventListener("click", () => onOpenNote(note.id, note.updatedUnix));
   if (animate) {
     btn.addEventListener(
       "animationend",
@@ -225,10 +228,10 @@ function scheduleSave() {
   }, AUTOSAVE_MS);
 }
 
-async function onOpenNote(id) {
+async function onOpenNote(id, updatedUnix) {
   try {
     const body = await ensureBody(id);
-    openModal(body);
+    openModal(body, updatedUnix);
   } catch (err) {
     console.error(err);
   }
