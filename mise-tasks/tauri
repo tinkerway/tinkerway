@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Open the Tauri capture window"
+#MISE quiet=true
+# Skips Mr Boxington for this crate. Its cache can drop Tauri's ACL permission files.
+set -euo pipefail
+
+cd "${MISE_PROJECT_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+export MBX_DISABLE=1
+exec cargo run -p tinkerway-tauri

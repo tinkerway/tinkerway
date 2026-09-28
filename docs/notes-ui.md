@@ -1,12 +1,12 @@
 # Capture
 
-The writing field is the live thought. An older line opens so you can read it. You cannot change an older line. This is capture, not a notes editor.
+The writing field sits at the bottom and grows as you add lines. Sent thoughts stack above it, oldest first, the newest just above the field. An older line opens full so you can read it. You cannot change an older line. This is capture, not a notes editor.
 
 ## Flows
 
 1. **Write** — Type in the field (Enter inserts a newline). The draft stays off the list until you **Send**. An empty field stays out of the list.
-2. **New** — **New** at the top right, or **Command-N**, returns to the writing field. **Send** or **Command-Enter** puts the words in the list and clears the field.
-3. **Read** — Click an older line. The words show in the field. You cannot change them. Click that line again to return to the writing field.
+2. **Send** — **Send** or **Command-Enter** puts the words in the list, just above the field, and clears the field.
+3. **Read** — Click an older line. It opens full, read-only. **Escape**, the close button, or the dimmed area around it closes that view. The writing field stays underneath.
 4. **Shortcuts** — Click **Shortcuts** at the bottom. In the writing field, **?** types a question mark. Press **Escape** to leave the field, then press **?** to open Shortcuts. Hold Command to see the shortcut keys on the screen you are already on.
 
 ## One source of structure

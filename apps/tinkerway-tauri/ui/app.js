@@ -3,22 +3,25 @@
 
 const AUTOSAVE_MS = 400;
 
+const COMPOSE_LINE = 30;
+const COMPOSE_MAX = 240;
+
 const el = {
   compose: document.getElementById("compose"),
-  writeCard: document.getElementById("write-card"),
-  readCard: document.getElementById("read-card"),
-  readBody: document.getElementById("read-body"),
+  thread: document.getElementById("thread"),
   list: document.getElementById("note-list"),
   home: document.getElementById("home"),
   shortcuts: document.getElementById("shortcuts"),
   breadcrumb: document.getElementById("breadcrumb"),
+  modal: document.getElementById("note-modal"),
+  modalBody: document.getElementById("modal-body"),
   btnSend: document.getElementById("btn-send"),
-  btnNew: document.getElementById("btn-new"),
   btnHome: document.getElementById("btn-home"),
   btnShortcuts: document.getElementById("btn-shortcuts"),
   btnCloseShortcuts: document.getElementById("btn-close-shortcuts"),
+  btnCloseNote: document.getElementById("btn-close-note"),
+  btnModalBackdrop: document.getElementById("btn-modal-backdrop"),
   sendChord: document.getElementById("send-chord"),
-  newChord: document.getElementById("new-chord"),
 };
 
 /** @type {string | null} */
@@ -69,14 +72,28 @@ function updateModLabels() {
     node.textContent = name;
   }
   el.sendChord.textContent = `${name} + Enter`;
-  el.newChord.textContent = `${name} + N`;
 }
 
 function setKeysVisible(show) {
   if (keysVisible === show) return;
   keysVisible = show;
   el.sendChord.classList.toggle("hidden", !show);
-  el.newChord.classList.toggle("hidden", !show);
+}
+
+function noteModalOpen() {
+  return !el.modal.classList.contains("hidden");
+}
+
+function resizeCompose() {
+  const field = el.compose;
+  field.style.height = "0px";
+  const next = Math.max(COMPOSE_LINE, Math.min(field.scrollHeight, COMPOSE_MAX));
+  field.style.height = `${next}px`;
+  field.style.overflowY = field.scrollHeight > COMPOSE_MAX ? "auto" : "hidden";
+}
+
+function scrollThreadToLatest() {
+  el.thread.scrollTop = el.thread.scrollHeight;
 }
 
 function updateSendEnabled() {
@@ -103,33 +120,37 @@ function hideShortcuts() {
   el.btnCloseShortcuts.classList.add("hidden");
 }
 
-function showCompose() {
+function closeNote() {
   selectedId = null;
-  el.readCard.classList.add("hidden");
-  el.writeCard.classList.remove("hidden");
-  el.compose.focus();
-  updateSendEnabled();
+  el.modal.classList.add("hidden");
   renderListActive();
+  el.compose.focus();
 }
 
-function showRead(body) {
-  el.writeCard.classList.add("hidden");
-  el.readCard.classList.remove("hidden");
-  el.readBody.textContent = body;
-  el.compose.blur();
+function openNote(note) {
+  selectedId = note.id;
+  el.modalBody.textContent = note.body;
+  el.modal.classList.remove("hidden");
   renderListActive();
+  el.btnCloseNote.focus();
 }
 
 function goHome() {
   hideShortcuts();
-  showCompose();
+  closeNote();
 }
 
 async function refreshList() {
   const notes = await invoke("list_notes");
-  el.list.replaceChildren();
+  const visible = [];
   for (const note of notes) {
     if (draftId && note.id === draftId) continue;
+    visible.push(note);
+  }
+  // Vault returns newest first. The thread reads downward, newest just above the field.
+  visible.reverse();
+  el.list.replaceChildren();
+  for (const note of visible) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.type = "button";
@@ -153,6 +174,7 @@ async function refreshList() {
     li.append(btn);
     el.list.append(li);
   }
+  scrollThreadToLatest();
 }
 
 function renderListActive() {
@@ -192,9 +214,8 @@ async function onSelectNote(id) {
   clearTimeout(saveTimer);
   await flushDraft();
   const note = await invoke("read_note", { id });
-  selectedId = id;
   hideShortcuts();
-  showRead(note.body);
+  openNote(note);
 }
 
 async function send() {
@@ -208,32 +229,29 @@ async function send() {
   }
   draftId = null;
   draftDirty = false;
+  selectedId = null;
+  el.modal.classList.add("hidden");
   el.compose.value = "";
+  resizeCompose();
   updateSendEnabled();
-  showCompose();
+  el.compose.focus();
   await refreshList();
 }
 
-async function newCapture() {
-  clearTimeout(saveTimer);
-  // Demo v1 New: save compose content if any, else leave open capture / shortcuts.
-  if (el.compose.value.trim()) {
-    await send();
-    return;
-  }
-  goHome();
-}
-
 function onComposeInput() {
-  if (selectedId) return;
+  resizeCompose();
   updateSendEnabled();
   scheduleSave();
 }
 
 function closeShortcutsOrBlur() {
+  if (noteModalOpen()) {
+    closeNote();
+    return;
+  }
   if (onShortcutsScreen()) {
     hideShortcuts();
-    if (!selectedId) el.compose.focus();
+    el.compose.focus();
     return;
   }
   if (document.activeElement === el.compose) {
@@ -253,19 +271,13 @@ function onKeyDown(e) {
     return;
   }
 
-  if (onShortcutsScreen()) {
+  if (noteModalOpen() || onShortcutsScreen()) {
     return;
   }
 
   if (mod && e.key === "Enter") {
     e.preventDefault();
-    if (!selectedId) send().catch(console.error);
-    return;
-  }
-
-  if (mod && (e.key === "n" || e.key === "N")) {
-    e.preventDefault();
-    newCapture().catch(console.error);
+    send().catch(console.error);
     return;
   }
 
@@ -291,22 +303,24 @@ el.compose.addEventListener("input", onComposeInput);
 el.btnSend.addEventListener("click", () => {
   if (!el.btnSend.disabled) send().catch(console.error);
 });
-el.btnNew.addEventListener("click", () => newCapture().catch(console.error));
 el.btnHome.addEventListener("click", goHome);
 el.btnShortcuts.addEventListener("click", showShortcuts);
 el.btnCloseShortcuts.addEventListener("click", () => {
   hideShortcuts();
-  if (!selectedId) el.compose.focus();
+  el.compose.focus();
 });
+el.btnCloseNote.addEventListener("click", closeNote);
+el.btnModalBackdrop.addEventListener("click", closeNote);
 window.addEventListener("keydown", onKeyDown);
 window.addEventListener("keyup", onKeyUp);
 window.addEventListener("blur", onBlurWindow);
 
 updateModLabels();
 updateSendEnabled();
+resizeCompose();
 refreshList()
-  .then(() => showCompose())
+  .then(() => el.compose.focus())
   .catch((err) => {
     console.error(err);
-    showCompose();
+    el.compose.focus();
   });

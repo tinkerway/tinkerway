@@ -25,6 +25,17 @@ hk install --mise   # wires pre-commit via mise
 mise run secrets-scan
 ```
 
+## Mr Boxington (mbx)
+
+`mise.toml` sets `mr_boxington` on Rust, so `cargo` from an activated mise shell goes through mbx's build cache.
+
+That includes ordinary Cargo in this repo:
+
+- `cargo test -p tinkerway-vault` locally, and the same step in [`.github/workflows/rust.yml`](../.github/workflows/rust.yml) (no `MBX_DISABLE`)
+- the parked GPUI shell, `cargo run -p tinkerway` / `cargo check -p tinkerway`
+
+The Tauri app turns the cache off. mbx can restore a compiled crate and skip Tauri's build script, which writes the ACL permission files the webview is allowed to call. `mise tauri` sets `MBX_DISABLE=1` for that run. CI's `cargo check -p tinkerway-tauri` does the same. Rust still comes from mise.
+
 ## CI
 
 [`.github/workflows/secrets.yml`](../.github/workflows/secrets.yml) runs betterleaks on push to `main`, every PR, and daily.

@@ -166,4 +166,4 @@ fi
 
 say "Ready"
 printf '%s\n' "Open the app with:"
-printf '%s\n' "MBX_DISABLE=1 cargo run -p tinkerway-tauri"
+printf '%s\n' "mise tauri"

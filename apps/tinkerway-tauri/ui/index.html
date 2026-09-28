@@ -28,35 +28,26 @@
       </header>
 
       <main id="home" class="home">
-        <section class="compose-pane" aria-label="Write">
-          <div id="write-card" class="mist-card write-card">
-            <textarea
-              id="compose"
-              class="compose"
-              placeholder="What's new?"
-              spellcheck="true"
-              autofocus
-            ></textarea>
+        <div id="thread" class="thread">
+          <ul id="note-list" class="note-list" aria-label="Notes"></ul>
+        </div>
+
+        <div id="write-card" class="composer">
+          <textarea
+            id="compose"
+            class="compose"
+            rows="1"
+            placeholder="What's new?"
+            spellcheck="true"
+            autofocus
+          ></textarea>
+          <div class="composer-bar">
             <button type="button" class="pill send" id="btn-send" disabled>
               <span class="pill-label">Send</span>
               <span class="pill-chord hidden" id="send-chord" data-chord="mod-enter"></span>
             </button>
           </div>
-          <div id="read-card" class="mist-card read-card hidden" aria-live="polite">
-            <div class="view-label">View</div>
-            <div id="read-body" class="read-body"></div>
-          </div>
-        </section>
-
-        <aside class="library" aria-label="Library">
-          <div class="library-toolbar">
-            <button type="button" class="pill new" id="btn-new">
-              <span class="pill-label">New</span>
-              <span class="pill-chord hidden" id="new-chord" data-chord="mod-n"></span>
-            </button>
-          </div>
-          <ul id="note-list" class="note-list"></ul>
-        </aside>
+        </div>
       </main>
 
       <section id="shortcuts" class="shortcuts-page hidden" aria-label="Shortcuts">
@@ -78,14 +69,6 @@
             <span class="shortcut-label">Send</span>
           </li>
           <li class="shortcut-row">
-            <div class="shortcut-keys">
-              <kbd class="keycap" data-mod-name>Cmd</kbd>
-              <span class="plus">+</span>
-              <kbd class="keycap">N</kbd>
-            </div>
-            <span class="shortcut-label">New</span>
-          </li>
-          <li class="shortcut-row">
             <div class="shortcut-keys"><kbd class="keycap">esc</kbd></div>
             <span class="shortcut-label">Leave</span>
           </li>
@@ -98,6 +81,24 @@
           <kbd class="keycap">?</kbd>
         </button>
       </footer>
+
+      <div id="note-modal" class="note-modal hidden">
+        <button type="button" class="note-modal-backdrop" id="btn-modal-backdrop" aria-label="Close"></button>
+        <div
+          class="note-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div class="note-modal-top">
+            <div class="view-label" id="modal-title">View</div>
+            <button type="button" class="modal-close" id="btn-close-note" aria-label="Close">
+              ×
+            </button>
+          </div>
+          <div id="modal-body" class="read-body"></div>
+        </div>
+      </div>
     </div>
     <script src="app.js"></script>
   </body>

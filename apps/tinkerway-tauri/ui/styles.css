@@ -10,7 +10,6 @@
   --page: #e4edf1;
   --view: #3e5563;
   --chord: #c5d4de;
-  --library: 420px;
   --row: 72px;
   --radius: 20px;
   --pad-x: 44px;
@@ -103,62 +102,55 @@ body {
 .home {
   flex: 1;
   display: flex;
-  flex-direction: row;
-  gap: 56px;
-  padding: 16px var(--pad-x) 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px var(--pad-x) 0;
   min-height: 0;
-  overflow: hidden;
 }
 
-.compose-pane {
+.thread {
   flex: 1;
-  min-width: 0;
   min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-.mist-card {
-  position: relative;
-  flex: 1;
-  min-height: 0;
+.composer {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--mist);
   border-radius: var(--radius);
-  overflow: hidden;
+  padding: 16px 16px 12px;
+  margin-bottom: 4px;
 }
 
-.write-card {
-  /* Writing: no border — soft mist only. */
-  border: 0;
-}
-
-.write-card:focus-within {
+.composer:focus-within {
   outline: 1px solid var(--focus);
   outline-offset: 0;
 }
 
-.read-card {
-  border: 1px solid var(--horizon);
-  padding: 36px;
-  gap: 16px;
-  overflow: auto;
-}
-
 .compose {
-  flex: 1;
   width: 100%;
-  min-height: 0;
+  min-height: 30px;
+  max-height: 240px;
   resize: none;
   border: 0;
   outline: none;
   background: transparent;
   color: var(--ink);
   font-family: var(--ui);
-  font-size: 28px;
-  line-height: 38px;
-  padding: 36px 36px 80px;
+  font-size: 22px;
+  line-height: 30px;
+  padding: 6px 8px 0;
+  overflow: hidden;
+}
+
+.composer-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 4px 2px;
 }
 
 .compose::placeholder {
@@ -197,12 +189,6 @@ body {
   cursor: pointer;
 }
 
-.pill.new {
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 20px;
-}
-
 .pill:disabled,
 .pill.is-dim {
   opacity: 0.35;
@@ -215,34 +201,12 @@ body {
   color: var(--chord);
 }
 
-.send {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-}
-
-.library {
-  display: flex;
-  flex-direction: column;
-  width: var(--library);
-  flex-shrink: 0;
-  min-height: 0;
-  gap: 48px;
-}
-
-.library-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
 .note-list {
   list-style: none;
   margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
+  margin-top: auto;
+  padding: 8px 8px 0;
+  width: 100%;
 }
 
 .note-row {
@@ -396,19 +360,69 @@ body {
   padding: 0;
 }
 
-.hidden {
-  display: none !important;
+.note-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
 }
 
-@media (max-width: 900px) {
-  .home {
-    flex-direction: column;
-    gap: 24px;
-  }
+.note-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(20, 42, 58, 0.32);
+  cursor: pointer;
+}
 
-  .library {
-    width: 100%;
-    max-height: 40vh;
-    gap: 16px;
-  }
+.note-modal-card {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: min(78vh, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--mist);
+  border-radius: var(--radius);
+  padding: 28px 32px 36px;
+  box-shadow: 0 24px 80px rgba(20, 42, 58, 0.18);
+}
+
+.note-modal-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.note-modal-top .view-label {
+  flex: 1;
+  padding-top: 6px;
+}
+
+.note-modal .read-body {
+  overflow: auto;
+  min-height: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hidden {
+  display: none !important;
 }

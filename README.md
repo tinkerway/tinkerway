@@ -10,7 +10,7 @@ Capture a thought (Demo v1): you type, it stays in the list, and an older line o
 
 ```bash
 mise setup
-MBX_DISABLE=1 cargo run -p tinkerway-tauri
+mise tauri
 ```
 
 Parked: former GPUI experiment under [`app/`](app/) (`cargo run -p tinkerway`) — not the Demo v1 default.

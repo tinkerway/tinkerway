@@ -1,6 +1,6 @@
 # tinkerway app (parked GPUI experiment)
 
-**Not the Demo v1 default.** Shipping capture UI is Tauri: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md) (`MBX_DISABLE=1 cargo run -p tinkerway-tauri`).
+**Not the Demo v1 default.** Shipping capture UI is Tauri: [`apps/tinkerway-tauri/README.md`](../apps/tinkerway-tauri/README.md) (`mise tauri`).
 
 This crate keeps the former GPUI shell for reference. It is excluded from workspace `default-members` and from CI. You can still build it explicitly with `cargo run -p tinkerway`.
 
