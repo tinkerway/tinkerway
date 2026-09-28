@@ -1,33 +1,31 @@
-/* Demo v1 capture (Tauri). Draft stays off the list until Send.
-   Master key never crosses IPC. */
+/* Demo v1 capture (Tauri). Messaging-shaped feed; capture-only (no replies).
+   Draft stays off the feed until Send. Master key never crosses IPC.
+   Enter sends; Shift+Enter newline. */
 
 const AUTOSAVE_MS = 400;
+const MODAL_MS = 240;
 
 const el = {
   compose: document.getElementById("compose"),
-  writeCard: document.getElementById("write-card"),
-  readCard: document.getElementById("read-card"),
-  readBody: document.getElementById("read-body"),
-  list: document.getElementById("note-list"),
-  home: document.getElementById("home"),
-  shortcuts: document.getElementById("shortcuts"),
-  breadcrumb: document.getElementById("breadcrumb"),
+  feed: document.getElementById("feed"),
+  feedScroll: document.getElementById("feed-scroll"),
   btnSend: document.getElementById("btn-send"),
-  btnNew: document.getElementById("btn-new"),
   btnHome: document.getElementById("btn-home"),
-  btnShortcuts: document.getElementById("btn-shortcuts"),
-  btnCloseShortcuts: document.getElementById("btn-close-shortcuts"),
-  sendChord: document.getElementById("send-chord"),
-  newChord: document.getElementById("new-chord"),
+  modal: document.getElementById("modal"),
+  modalBackdrop: document.getElementById("modal-backdrop"),
+  modalBody: document.getElementById("modal-body"),
+  btnModalClose: document.getElementById("btn-modal-close"),
 };
 
 /** @type {string | null} */
 let draftId = null;
-/** @type {string | null} */
-let selectedId = null;
 let saveTimer = null;
 let draftDirty = false;
-let keysVisible = false;
+/** @type {string | null} */
+let animateId = null;
+/** @type {Map<string, string>} */
+const bodyCache = new Map();
+let modalClosing = false;
 
 function invoke(cmd, args = {}) {
   const core = window.__TAURI__?.core;
@@ -35,14 +33,6 @@ function invoke(cmd, args = {}) {
     return Promise.reject(new Error("Tauri IPC unavailable"));
   }
   return core.invoke(cmd, args);
-}
-
-function isMac() {
-  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-}
-
-function modName() {
-  return isMac() ? "Cmd" : "Ctrl";
 }
 
 function whenLabel(updatedUnix) {
@@ -63,104 +53,113 @@ function whenLabel(updatedUnix) {
   return days[Math.floor((updatedUnix || 0) / 86400) % 7];
 }
 
-function updateModLabels() {
-  const name = modName();
-  for (const node of document.querySelectorAll("[data-mod-name]")) {
-    node.textContent = name;
-  }
-  el.sendChord.textContent = `${name} + Enter`;
-  el.newChord.textContent = `${name} + N`;
-}
-
-function setKeysVisible(show) {
-  if (keysVisible === show) return;
-  keysVisible = show;
-  el.sendChord.classList.toggle("hidden", !show);
-  el.newChord.classList.toggle("hidden", !show);
-}
-
 function updateSendEnabled() {
-  const can = el.compose.value.trim().length > 0;
-  el.btnSend.disabled = !can;
-  el.btnSend.classList.toggle("is-dim", !can);
+  el.btnSend.disabled = el.compose.value.trim().length === 0;
 }
 
-function onShortcutsScreen() {
-  return !el.shortcuts.classList.contains("hidden");
+function resizeCompose() {
+  const node = el.compose;
+  node.style.height = "auto";
+  const maxPx = parseFloat(getComputedStyle(node).maxHeight) || 152;
+  node.style.height = `${Math.min(node.scrollHeight, maxPx)}px`;
 }
 
-function showShortcuts() {
-  el.shortcuts.classList.remove("hidden");
-  el.home.classList.add("hidden");
-  el.breadcrumb.classList.remove("hidden");
-  el.breadcrumb.setAttribute("aria-hidden", "false");
-  el.btnCloseShortcuts.classList.remove("hidden");
+function isModalOpen() {
+  return el.modal.classList.contains("is-open") && !el.modal.classList.contains("hidden");
 }
 
-function hideShortcuts() {
-  el.shortcuts.classList.add("hidden");
-  el.home.classList.remove("hidden");
-  el.breadcrumb.classList.add("hidden");
-  el.breadcrumb.setAttribute("aria-hidden", "true");
-  el.btnCloseShortcuts.classList.add("hidden");
+function openModal(body) {
+  modalClosing = false;
+  el.modalBody.textContent = body || "";
+  el.modal.classList.remove("hidden", "is-closing");
+  el.modal.removeAttribute("hidden");
+  // Next frame so CSS transitions run from the closed state.
+  requestAnimationFrame(() => {
+    el.modal.classList.add("is-open");
+  });
+  el.btnModalClose.focus();
 }
 
-function showCompose() {
-  selectedId = null;
-  el.readCard.classList.add("hidden");
-  el.writeCard.classList.remove("hidden");
-  el.compose.focus();
-  updateSendEnabled();
-  renderListActive();
+function closeModal() {
+  if (!isModalOpen() || modalClosing) return;
+  modalClosing = true;
+  el.modal.classList.add("is-closing");
+  el.modal.classList.remove("is-open");
+  window.setTimeout(() => {
+    el.modal.classList.add("hidden");
+    el.modal.classList.remove("is-closing");
+    el.modal.setAttribute("hidden", "");
+    el.modalBody.textContent = "";
+    modalClosing = false;
+    el.compose.focus();
+  }, MODAL_MS);
 }
 
-function showRead(body) {
-  el.writeCard.classList.add("hidden");
-  el.readCard.classList.remove("hidden");
-  el.readBody.textContent = body;
-  el.compose.blur();
-  renderListActive();
+function scrollFeedToEnd() {
+  el.feedScroll.scrollTop = el.feedScroll.scrollHeight;
 }
 
-function goHome() {
-  hideShortcuts();
-  showCompose();
+function makeRow(note, { animate } = {}) {
+  const li = document.createElement("li");
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "feed-row" + (animate ? " is-entering" : "");
+  btn.dataset.id = note.id;
+  btn.setAttribute("aria-label", "Open capture");
+
+  const preview = document.createElement("p");
+  preview.className = "feed-preview";
+  preview.textContent = bodyCache.get(note.id) || note.title || "";
+
+  const meta = document.createElement("div");
+  meta.className = "feed-meta";
+  meta.textContent = whenLabel(note.updatedUnix);
+
+  btn.append(preview, meta);
+  btn.addEventListener("click", () => onOpenNote(note.id));
+  if (animate) {
+    btn.addEventListener(
+      "animationend",
+      () => btn.classList.remove("is-entering"),
+      { once: true },
+    );
+  }
+  li.append(btn);
+  return li;
 }
 
-async function refreshList() {
+async function ensureBody(id) {
+  if (bodyCache.has(id)) return bodyCache.get(id);
+  const note = await invoke("read_note", { id });
+  bodyCache.set(id, note.body || "");
+  return note.body || "";
+}
+
+async function refreshFeed() {
   const notes = await invoke("list_notes");
-  el.list.replaceChildren();
-  for (const note of notes) {
-    if (draftId && note.id === draftId) continue;
-    const li = document.createElement("li");
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "note-row" + (selectedId === note.id ? " active" : "");
-    btn.dataset.id = note.id;
+  // Vault returns newest-first; reverse so oldest→newest and newest sits above compose.
+  const visible = notes.filter((n) => !(draftId && n.id === draftId)).reverse();
 
-    const mark = document.createElement("span");
-    mark.className = "note-mark";
-    mark.setAttribute("aria-hidden", "true");
+  await Promise.all(
+    visible.map(async (n) => {
+      if (!bodyCache.has(n.id)) {
+        try {
+          await ensureBody(n.id);
+        } catch (err) {
+          console.error("read preview", err);
+          bodyCache.set(n.id, n.title || "");
+        }
+      }
+    }),
+  );
 
-    const title = document.createElement("span");
-    title.className = "note-title";
-    title.textContent = note.title || "Untitled";
-
-    const when = document.createElement("span");
-    when.className = "note-when";
-    when.textContent = whenLabel(note.updatedUnix);
-
-    btn.append(mark, title, when);
-    btn.addEventListener("click", () => onSelectNote(note.id));
-    li.append(btn);
-    el.list.append(li);
+  const entering = animateId;
+  animateId = null;
+  el.feed.replaceChildren();
+  for (const note of visible) {
+    el.feed.append(makeRow(note, { animate: note.id === entering }));
   }
-}
-
-function renderListActive() {
-  for (const row of el.list.querySelectorAll(".note-row")) {
-    row.classList.toggle("active", row.dataset.id === selectedId);
-  }
+  scrollFeedToEnd();
 }
 
 async function flushDraft() {
@@ -186,129 +185,93 @@ function scheduleSave() {
   }, AUTOSAVE_MS);
 }
 
-async function onSelectNote(id) {
-  if (selectedId === id) {
-    goHome();
-    return;
+async function onOpenNote(id) {
+  try {
+    const body = await ensureBody(id);
+    openModal(body);
+  } catch (err) {
+    console.error(err);
   }
-  clearTimeout(saveTimer);
-  await flushDraft();
-  const note = await invoke("read_note", { id });
-  selectedId = id;
-  hideShortcuts();
-  showRead(note.body);
+}
+
+function pulseSend() {
+  el.btnSend.classList.remove("is-sending");
+  // Retrigger CSS animation.
+  void el.btnSend.offsetWidth;
+  el.btnSend.classList.add("is-sending");
+  window.setTimeout(() => el.btnSend.classList.remove("is-sending"), 340);
 }
 
 async function send() {
   const body = el.compose.value;
   if (!body.trim()) return;
+  pulseSend();
   clearTimeout(saveTimer);
-  if (draftId) {
-    await invoke("update_note", { id: draftId, body });
+  let id = draftId;
+  if (id) {
+    await invoke("update_note", { id, body });
   } else {
-    await invoke("create_note", { body });
+    id = await invoke("create_note", { body });
   }
+  bodyCache.set(id, body);
+  animateId = id;
   draftId = null;
   draftDirty = false;
   el.compose.value = "";
+  resizeCompose();
   updateSendEnabled();
-  showCompose();
-  await refreshList();
-}
-
-async function newCapture() {
-  clearTimeout(saveTimer);
-  // Demo v1 New: save compose content if any, else leave open capture / shortcuts.
-  if (el.compose.value.trim()) {
-    await send();
-    return;
-  }
-  goHome();
+  await refreshFeed();
+  el.compose.focus();
 }
 
 function onComposeInput() {
-  if (selectedId) return;
   updateSendEnabled();
+  resizeCompose();
   scheduleSave();
 }
 
-function closeShortcutsOrBlur() {
-  if (onShortcutsScreen()) {
-    hideShortcuts();
-    if (!selectedId) el.compose.focus();
-    return;
-  }
-  if (document.activeElement === el.compose) {
-    el.compose.blur();
-  }
+function onComposeKeyDown(e) {
+  if (e.key !== "Enter") return;
+  if (e.shiftKey) return;
+  if (e.isComposing || e.keyCode === 229) return;
+  e.preventDefault();
+  if (!el.btnSend.disabled) send().catch(console.error);
 }
 
 function onKeyDown(e) {
-  const mod = e.metaKey || e.ctrlKey;
-  if (e.key === "Meta" || e.key === "Control") {
-    setKeysVisible(true);
-  }
-
   if (e.key === "Escape") {
-    closeShortcutsOrBlur();
-    e.preventDefault();
-    return;
-  }
-
-  if (onShortcutsScreen()) {
-    return;
-  }
-
-  if (mod && e.key === "Enter") {
-    e.preventDefault();
-    if (!selectedId) send().catch(console.error);
-    return;
-  }
-
-  if (mod && (e.key === "n" || e.key === "N")) {
-    e.preventDefault();
-    newCapture().catch(console.error);
-    return;
-  }
-
-  const inField = document.activeElement === el.compose;
-  if (!inField && (e.key === "?" || (e.key === "/" && e.shiftKey))) {
-    e.preventDefault();
-    showShortcuts();
+    if (isModalOpen()) {
+      e.preventDefault();
+      closeModal();
+      return;
+    }
+    if (document.activeElement === el.compose) {
+      e.preventDefault();
+      el.compose.blur();
+    }
   }
 }
 
-function onKeyUp(e) {
-  if (e.key === "Meta" || e.key === "Control") {
-    // Secondary still held (Cmd+Ctrl edge) — only hide when neither remains.
-    if (!e.metaKey && !e.ctrlKey) setKeysVisible(false);
-  }
-}
-
-function onBlurWindow() {
-  setKeysVisible(false);
+function goHome() {
+  if (isModalOpen()) closeModal();
+  else el.compose.focus();
 }
 
 el.compose.addEventListener("input", onComposeInput);
+el.compose.addEventListener("keydown", onComposeKeyDown);
 el.btnSend.addEventListener("click", () => {
   if (!el.btnSend.disabled) send().catch(console.error);
 });
-el.btnNew.addEventListener("click", () => newCapture().catch(console.error));
 el.btnHome.addEventListener("click", goHome);
-el.btnShortcuts.addEventListener("click", showShortcuts);
-el.btnCloseShortcuts.addEventListener("click", () => {
-  hideShortcuts();
-  if (!selectedId) el.compose.focus();
-});
+el.btnModalClose.addEventListener("click", closeModal);
+el.modalBackdrop.addEventListener("click", closeModal);
 window.addEventListener("keydown", onKeyDown);
-window.addEventListener("keyup", onKeyUp);
-window.addEventListener("blur", onBlurWindow);
 
-updateModLabels();
 updateSendEnabled();
-refreshList()
-  .then(() => showCompose())
+resizeCompose();
+refreshFeed()
+  .then(() => el.compose.focus())
   .catch((err) => {
     console.error(err);
-    showCompose();
+    el.compose.focus();
   });

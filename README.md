@@ -6,14 +6,12 @@ You type whatever is in your head. The app keeps the context, turns it into an e
 
 ## App
 
-Capture a thought (Demo v1): you type, Send puts it in the list, and an older line opens so you can read it. You cannot change an older line. The words are sealed in an encrypted `.tw` vault (OS keystore master key). Desktop shell under [`apps/tinkerway-tauri`](apps/tinkerway-tauri/) ([Tauri 2](https://v2.tauri.app/) + system webview + plain HTML/CSS/JS); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no UI types. Run: [`apps/tinkerway-tauri/README.md`](apps/tinkerway-tauri/README.md). Norms: [`docs/`](docs/).
+Capture a thought (Demo v1): type at the bottom, Send puts it in the feed above, tap a row to read it. Capture only — no folders, tags, or replies. The words are sealed in an encrypted `.tw` vault (OS keystore master key). Desktop shell under [`apps/tinkerway-tauri`](apps/tinkerway-tauri/) ([Tauri 2](https://v2.tauri.app/) + system webview + plain HTML/CSS/JS); vault IO in [`crates/tinkerway-vault`](crates/tinkerway-vault/) with no UI types. Run: [`apps/tinkerway-tauri/README.md`](apps/tinkerway-tauri/README.md). Norms: [`docs/`](docs/).
 
 ```bash
 mise install
 MBX_DISABLE=1 cargo run -p tinkerway-tauri
 ```
-
-Parked: former GPUI experiment under [`app/`](app/) (`cargo run -p tinkerway`) — not the Demo v1 default.
 
 ## Housekeeping
 
