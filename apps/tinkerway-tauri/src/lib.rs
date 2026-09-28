@@ -6,19 +6,11 @@ use std::sync::Mutex;
 use serde::Serialize;
 use tauri::State;
 use tinkerway_vault::{
-    migrate_legacy_workspace, NoteId, NoteMeta, NoteRecord, Vault, VaultError,
+    migrate_legacy_workspace, NoteId, NoteRecord, Vault, VaultError,
 };
 
 struct VaultState {
     vault: Mutex<Vault>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct NoteMetaDto {
-    id: String,
-    title: String,
-    updated_unix: u64,
 }
 
 #[derive(Serialize)]
@@ -28,16 +20,6 @@ struct NoteRecordDto {
     title: String,
     body: String,
     updated_unix: u64,
-}
-
-impl From<NoteMeta> for NoteMetaDto {
-    fn from(n: NoteMeta) -> Self {
-        Self {
-            id: n.id.to_string(),
-            title: n.title,
-            updated_unix: n.updated_unix,
-        }
-    }
 }
 
 impl From<NoteRecord> for NoteRecordDto {
@@ -55,39 +37,58 @@ fn map_err(err: VaultError) -> String {
     err.to_string()
 }
 
+fn with_vault<R>(
+    state: &State<'_, VaultState>,
+    f: impl FnOnce(&Vault) -> Result<R, VaultError>,
+) -> Result<R, String> {
+    let vault = state
+        .vault
+        .lock()
+        .map_err(|_| "vault lock poisoned".to_string())?;
+    f(&vault).map_err(map_err)
+}
+
+fn with_vault_mut<R>(
+    state: &State<'_, VaultState>,
+    f: impl FnOnce(&mut Vault) -> Result<R, VaultError>,
+) -> Result<R, String> {
+    let mut vault = state
+        .vault
+        .lock()
+        .map_err(|_| "vault lock poisoned".to_string())?;
+    f(&mut vault).map_err(map_err)
+}
+
 #[tauri::command]
-fn list_notes(state: State<'_, VaultState>) -> Result<Vec<NoteMetaDto>, String> {
-    let vault = state.vault.lock().map_err(|_| "vault lock poisoned".to_string())?;
-    let notes = vault.list_notes().map_err(map_err)?;
-    Ok(notes.into_iter().map(NoteMetaDto::from).collect())
+fn list_notes(state: State<'_, VaultState>) -> Result<Vec<NoteRecordDto>, String> {
+    with_vault(&state, |vault| {
+        Ok(vault
+            .list_captures()?
+            .into_iter()
+            .map(NoteRecordDto::from)
+            .collect())
+    })
 }
 
 #[tauri::command]
 fn read_note(state: State<'_, VaultState>, id: String) -> Result<NoteRecordDto, String> {
     let note_id = NoteId::parse(&id).map_err(map_err)?;
-    let vault = state.vault.lock().map_err(|_| "vault lock poisoned".to_string())?;
-    let note = vault.read_note(&note_id).map_err(map_err)?;
-    Ok(NoteRecordDto::from(note))
+    with_vault(&state, |vault| {
+        vault.read_note(&note_id).map(NoteRecordDto::from)
+    })
 }
 
 #[tauri::command]
 fn create_note(state: State<'_, VaultState>, body: String) -> Result<String, String> {
-    let mut vault = state
-        .vault
-        .lock()
-        .map_err(|_| "vault lock poisoned".to_string())?;
-    let id = vault.create_note(&body).map_err(map_err)?;
-    Ok(id.to_string())
+    with_vault_mut(&state, |vault| {
+        vault.create_note(&body).map(|id| id.to_string())
+    })
 }
 
 #[tauri::command]
 fn update_note(state: State<'_, VaultState>, id: String, body: String) -> Result<(), String> {
     let note_id = NoteId::parse(&id).map_err(map_err)?;
-    let mut vault = state
-        .vault
-        .lock()
-        .map_err(|_| "vault lock poisoned".to_string())?;
-    vault.update_note(&note_id, &body).map_err(map_err)
+    with_vault_mut(&state, |vault| vault.update_note(&note_id, &body))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

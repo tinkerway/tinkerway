@@ -1,7 +1,3 @@
-/* Demo v1 capture (Tauri). Messaging-shaped feed; capture-only (no replies).
-   Draft stays in the compose field until Send. Master key never crosses IPC.
-   Enter sends; Shift+Enter newline. */
-
 const MODAL_MS = 240;
 
 const el = {
@@ -19,24 +15,29 @@ const el = {
 
 /** @type {string | null} */
 let animateId = null;
-/** @type {Map<string, string>} */
-const bodyCache = new Map();
 let modalClosing = false;
 
-/** In-memory mock when opened outside Tauri (browser preview / screenshots). */
+function titleFromBody(body) {
+  const firstLine = String(body || "")
+    .split(/\r?\n/)[0]
+    .trim();
+  if (!firstLine) return "Untitled";
+  const words = firstLine.split(/\s+/).filter(Boolean);
+  let title = words.slice(0, 8).join(" ");
+  if ([...title].length > 60) {
+    title = [...title].slice(0, 57).join("") + "…";
+  }
+  if (words.length > 8) title += "…";
+  return title;
+}
+
 const mockVault = (() => {
   /** @type {{ id: string, title: string, body: string, updatedUnix: number }[]} */
   let notes = [];
   let seq = 0;
-  function titleFrom(body) {
-    const line = String(body || "").trim().split(/\r?\n/)[0] || "Untitled";
-    return line.length > 48 ? line.slice(0, 48) : line;
-  }
   return {
     async list_notes() {
-      return notes
-        .map(({ id, title, updatedUnix }) => ({ id, title, updatedUnix }))
-        .sort((a, b) => b.updatedUnix - a.updatedUnix);
+      return [...notes].sort((a, b) => b.updatedUnix - a.updatedUnix);
     },
     async read_note({ id }) {
       const n = notes.find((x) => x.id === id);
@@ -47,7 +48,7 @@ const mockVault = (() => {
       const id = `mock-${++seq}`;
       notes.unshift({
         id,
-        title: titleFrom(body),
+        title: titleFromBody(body),
         body,
         updatedUnix: Math.floor(Date.now() / 1000),
       });
@@ -57,7 +58,7 @@ const mockVault = (() => {
       const n = notes.find((x) => x.id === id);
       if (!n) throw new Error("not found");
       n.body = body;
-      n.title = titleFrom(body);
+      n.title = titleFromBody(body);
       n.updatedUnix = Math.floor(Date.now() / 1000);
     },
   };
@@ -90,6 +91,13 @@ function whenLabel(updatedUnix) {
   return days[Math.floor((updatedUnix || 0) / 86400) % 7];
 }
 
+function chronologicalForFeed(notes) {
+  return [...notes].sort((a, b) => {
+    if (a.updatedUnix !== b.updatedUnix) return a.updatedUnix - b.updatedUnix;
+    return String(a.id).localeCompare(String(b.id));
+  });
+}
+
 function updateSendEnabled() {
   el.btnSend.disabled = el.compose.value.trim().length === 0;
 }
@@ -111,6 +119,7 @@ function openModal(body, updatedUnix) {
   el.modalBody.textContent = body || "";
   el.modal.classList.remove("hidden", "is-closing");
   el.modal.removeAttribute("hidden");
+  // Next frame so CSS transitions run from the closed state.
   requestAnimationFrame(() => {
     el.modal.classList.add("is-open");
   });
@@ -147,14 +156,14 @@ function makeRow(note, { animate } = {}) {
 
   const preview = document.createElement("p");
   preview.className = "feed-preview";
-  preview.textContent = bodyCache.get(note.id) || note.title || "";
+  preview.textContent = note.body || note.title || "";
 
   const meta = document.createElement("div");
   meta.className = "feed-meta";
   meta.textContent = whenLabel(note.updatedUnix);
 
   btn.append(preview, meta);
-  btn.addEventListener("click", () => onOpenNote(note.id, note.updatedUnix));
+  btn.addEventListener("click", () => onOpenNote(note));
   if (animate) {
     btn.addEventListener(
       "animationend",
@@ -166,51 +175,24 @@ function makeRow(note, { animate } = {}) {
   return li;
 }
 
-async function ensureBody(id) {
-  if (bodyCache.has(id)) return bodyCache.get(id);
-  const note = await invoke("read_note", { id });
-  bodyCache.set(id, note.body || "");
-  return note.body || "";
-}
-
 async function refreshFeed() {
-  const notes = await invoke("list_notes");
-  // Vault returns newest-first; reverse so oldest→newest and newest sits above compose.
-  const visible = [...notes].reverse();
-
-  await Promise.all(
-    visible.map(async (n) => {
-      if (!bodyCache.has(n.id)) {
-        try {
-          await ensureBody(n.id);
-        } catch (err) {
-          console.error("read preview", err);
-          bodyCache.set(n.id, n.title || "");
-        }
-      }
-    }),
-  );
-
+  const notes = chronologicalForFeed(await invoke("list_notes"));
   const entering = animateId;
   animateId = null;
   el.feed.replaceChildren();
-  for (const note of visible) {
+  for (const note of notes) {
     el.feed.append(makeRow(note, { animate: note.id === entering }));
   }
   scrollFeedToEnd();
 }
 
-async function onOpenNote(id, updatedUnix) {
-  try {
-    const body = await ensureBody(id);
-    openModal(body, updatedUnix);
-  } catch (err) {
-    console.error(err);
-  }
+function onOpenNote(note) {
+  openModal(note.body || note.title || "", note.updatedUnix);
 }
 
 function pulseSend() {
   el.btnSend.classList.remove("is-sending");
+  // Retrigger CSS animation.
   void el.btnSend.offsetWidth;
   el.btnSend.classList.add("is-sending");
   window.setTimeout(() => el.btnSend.classList.remove("is-sending"), 340);
@@ -221,7 +203,6 @@ async function send() {
   if (!body.trim()) return;
   pulseSend();
   const id = await invoke("create_note", { body });
-  bodyCache.set(id, body);
   animateId = id;
   el.compose.value = "";
   resizeCompose();

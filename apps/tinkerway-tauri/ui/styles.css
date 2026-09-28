@@ -1,6 +1,3 @@
-/* Demo v1 capture — messaging-shaped feed, capture-only (no replies).
-   Motion: Intention-calm — short, soft, prefers-reduced-motion aware. */
-
 :root {
   --mist: #f7fbfc;
   --ink: #142a3a;
@@ -98,7 +95,6 @@ body {
   gap: 18px;
 }
 
-/* Feed fills space above pinned compose; overflow scrolls. */
 .feed-scroll {
   flex: 1 1 auto;
   min-height: 0;
@@ -147,7 +143,6 @@ body {
 }
 
 .feed-row + .feed-row {
-  /* Quiet separators without a full rule farm */
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--horizon) 85%, transparent);
 }
 

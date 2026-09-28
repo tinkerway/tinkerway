@@ -10,9 +10,10 @@ use rand::RngCore;
 use crate::crypto::{self, hex_encode, MasterKey};
 use crate::keystore::{self, KeystoreError};
 
-const MANIFEST_NAME: &str = "manifest.json";
+const MANIFEST_NAME: &str = "manifest";
 const NOTES_DIR: &str = "notes";
 const MANIFEST_VERSION: u32 = 1;
+const MANIFEST_MAGIC: &str = "TWMANIFEST";
 const AEAD_ID: &str = "aes-256-gcm";
 const NOTE_EXT: &str = "tw";
 
@@ -154,19 +155,21 @@ impl Vault {
         &self.root
     }
 
-    /// List notes newest-first. Titles come from decrypting each envelope.
-    pub fn list_notes(&self) -> Result<Vec<NoteMeta>, VaultError> {
+    /// List captures newest-first. One decrypt per note (title + body).
+    pub fn list_captures(&self) -> Result<Vec<NoteRecord>, VaultError> {
         let mut out = Vec::with_capacity(self.manifest.notes.len());
         for entry in &self.manifest.notes {
             match self.read_payload(&entry.id) {
-                Ok((title, _body)) => out.push(NoteMeta {
+                Ok((title, body)) => out.push(NoteRecord {
                     id: entry.id.clone(),
                     title,
+                    body,
                     updated_unix: entry.updated_unix,
                 }),
-                Err(_) => out.push(NoteMeta {
+                Err(_) => out.push(NoteRecord {
                     id: entry.id.clone(),
                     title: "(unreadable)".into(),
+                    body: String::new(),
                     updated_unix: entry.updated_unix,
                 }),
             }
@@ -177,6 +180,19 @@ impl Vault {
                 .then_with(|| a.id.as_str().cmp(b.id.as_str()))
         });
         Ok(out)
+    }
+
+    /// List note metadata newest-first (derived from [`list_captures`]).
+    pub fn list_notes(&self) -> Result<Vec<NoteMeta>, VaultError> {
+        Ok(self
+            .list_captures()?
+            .into_iter()
+            .map(|n| NoteMeta {
+                id: n.id,
+                title: n.title,
+                updated_unix: n.updated_unix,
+            })
+            .collect())
     }
 
     pub fn read_note(&self, id: &NoteId) -> Result<NoteRecord, VaultError> {
@@ -246,7 +262,7 @@ impl Vault {
     fn write_payload(&self, id: &NoteId, title: &str, body: &str) -> Result<(), VaultError> {
         let plaintext = encode_payload(title, body);
         let envelope = crypto::seal(&self.key, &plaintext)?;
-        fs::write(self.note_path(id), envelope)?;
+        write_atomic(&self.note_path(id), &envelope)?;
         Ok(())
     }
 }
@@ -320,48 +336,70 @@ fn load_or_init_manifest(root: &Path) -> Result<Manifest, VaultError> {
 }
 
 fn save_manifest(root: &Path, manifest: &Manifest) -> Result<(), VaultError> {
-    let path = root.join(MANIFEST_NAME);
-    let text = render_manifest(manifest);
-    fs::write(path, text)?;
+    write_atomic(&root.join(MANIFEST_NAME), render_manifest(manifest).as_bytes())
+}
+
+fn write_atomic(path: &Path, data: &[u8]) -> Result<(), VaultError> {
+    let tmp = path.with_file_name(format!(
+        "{}.tmp",
+        path.file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| VaultError::Io(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "bad vault path",
+            )))?
+    ));
+    fs::write(&tmp, data)?;
+    fs::rename(&tmp, path)?;
     Ok(())
 }
 
 fn render_manifest(manifest: &Manifest) -> String {
-    let mut notes = String::new();
-    for (i, n) in manifest.notes.iter().enumerate() {
-        if i > 0 {
-            notes.push(',');
-        }
-        notes.push_str(&format!(
-            "{{\"id\":\"{}\",\"updated\":{}}}",
-            n.id.as_str(),
-            n.updated_unix
-        ));
+    let mut out = format!(
+        "{MANIFEST_MAGIC} {} {}\n",
+        manifest.version, manifest.aead
+    );
+    for n in &manifest.notes {
+        out.push_str(&format!("{} {}\n", n.id.as_str(), n.updated_unix));
     }
-    format!(
-        "{{\"version\":{},\"aead\":\"{}\",\"notes\":[{}]}}\n",
-        manifest.version, manifest.aead, notes
-    )
+    out
 }
 
 fn parse_manifest(text: &str) -> Result<Manifest, VaultError> {
-    let text = text.trim();
-    let version = extract_u32_field(text, "version")
-        .ok_or_else(|| VaultError::CorruptManifest("missing version".into()))?;
-    let aead = extract_string_field(text, "aead")
+    let mut lines = text.lines().filter(|l| !l.trim().is_empty());
+    let header = lines
+        .next()
+        .ok_or_else(|| VaultError::CorruptManifest("empty manifest".into()))?;
+    let mut parts = header.split_whitespace();
+    let magic = parts
+        .next()
+        .ok_or_else(|| VaultError::CorruptManifest("missing magic".into()))?;
+    if magic != MANIFEST_MAGIC {
+        return Err(VaultError::CorruptManifest(format!("bad magic {magic}")));
+    }
+    let version: u32 = parts
+        .next()
+        .ok_or_else(|| VaultError::CorruptManifest("missing version".into()))?
+        .parse()
+        .map_err(|_| VaultError::CorruptManifest("bad version".into()))?;
+    let aead = parts
+        .next()
         .ok_or_else(|| VaultError::CorruptManifest("missing aead".into()))?;
     if aead != AEAD_ID {
         return Err(VaultError::CorruptManifest(format!("unsupported aead {aead}")));
     }
-    let notes_slice = extract_array_slice(text, "notes")
-        .ok_or_else(|| VaultError::CorruptManifest("missing notes".into()))?;
     let mut notes = Vec::new();
-    for obj in split_json_objects(notes_slice) {
-        let id_str = extract_string_field(obj, "id")
+    for line in lines {
+        let mut cols = line.split_whitespace();
+        let id_str = cols
+            .next()
             .ok_or_else(|| VaultError::CorruptManifest("note missing id".into()))?;
-        let updated = extract_u64_field(obj, "updated").unwrap_or(0);
+        let updated = cols
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
         notes.push(ManifestEntry {
-            id: NoteId::parse(&id_str)?,
+            id: NoteId::parse(id_str)?,
             updated_unix: updated,
         });
     }
@@ -370,78 +408,6 @@ fn parse_manifest(text: &str) -> Result<Manifest, VaultError> {
         aead: aead.to_string(),
         notes,
     })
-}
-
-fn extract_string_field<'a>(json: &'a str, key: &str) -> Option<&'a str> {
-    let pattern = format!("\"{key}\"");
-    let idx = json.find(&pattern)?;
-    let after = &json[idx + pattern.len()..];
-    let after = after.trim_start();
-    let after = after.strip_prefix(':')?.trim_start();
-    let after = after.strip_prefix('"')?;
-    let end = after.find('"')?;
-    Some(&after[..end])
-}
-
-fn extract_u32_field(json: &str, key: &str) -> Option<u32> {
-    extract_number_field(json, key)?.parse().ok()
-}
-
-fn extract_u64_field(json: &str, key: &str) -> Option<u64> {
-    extract_number_field(json, key)?.parse().ok()
-}
-
-fn extract_number_field<'a>(json: &'a str, key: &str) -> Option<&'a str> {
-    let pattern = format!("\"{key}\"");
-    let idx = json.find(&pattern)?;
-    let after = &json[idx + pattern.len()..];
-    let after = after.trim_start().strip_prefix(':')?.trim_start();
-    let end = after
-        .find(|c: char| !(c.is_ascii_digit()))
-        .unwrap_or(after.len());
-    if end == 0 {
-        return None;
-    }
-    Some(&after[..end])
-}
-
-fn extract_array_slice<'a>(json: &'a str, key: &str) -> Option<&'a str> {
-    let pattern = format!("\"{key}\"");
-    let idx = json.find(&pattern)?;
-    let after = &json[idx + pattern.len()..];
-    let after = after.trim_start().strip_prefix(':')?.trim_start();
-    let after = after.strip_prefix('[')?;
-    let end = after.rfind(']')?;
-    Some(&after[..end])
-}
-
-fn split_json_objects(array_inner: &str) -> Vec<&str> {
-    let mut out = Vec::new();
-    let mut depth = 0usize;
-    let mut start = None;
-    for (i, ch) in array_inner.char_indices() {
-        match ch {
-            '{' => {
-                if depth == 0 {
-                    start = Some(i);
-                }
-                depth += 1;
-            }
-            '}' => {
-                if depth > 0 {
-                    depth -= 1;
-                    if depth == 0 {
-                        if let Some(s) = start {
-                            out.push(&array_inner[s..=i]);
-                        }
-                        start = None;
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-    out
 }
 
 fn now_unix() -> Result<u64, VaultError> {
@@ -490,7 +456,6 @@ mod tests {
         assert_eq!(listed[0].title, "Updated title line");
         assert_eq!(vault.read_note(&id).unwrap().body, "Updated title line\nbody");
 
-        // Ciphertext on disk — not plaintext markdown.
         let raw = fs::read(dir.join("notes").join(format!("{id}.tw"))).unwrap();
         assert!(raw.starts_with(b"TW01"));
         assert!(!String::from_utf8_lossy(&raw).contains("Updated title"));
@@ -529,7 +494,6 @@ mod tests {
         let bytes = fs::read(&path).unwrap();
         assert!(!bytes.windows(6).any(|w| w == b"secret"));
 
-        // Wrong key cannot open.
         let vault2 = Vault::open_with_key(&dir, MasterKey::generate()).unwrap();
         assert!(vault2.read_note(&id).is_err());
 

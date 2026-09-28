@@ -6,7 +6,7 @@
 
 | Piece | Rule |
 | --- | --- |
-| Note bodies at rest | **Ciphertext** — AES-256-GCM envelopes (`.tw`) + small `manifest.json`. Not open `.md` as the vault. |
+| Note bodies at rest | **Ciphertext** — AES-256-GCM envelopes (`.tw`) + small line-oriented `manifest`. Not open `.md` as the vault. |
 | Master key | **OS keystore**: macOS Keychain entry `ai.tinkerway.app` / `vault-master-key` (32-byte key, hex). On Linux: Secret Service / keyutils via the same `keyring` API; if unavailable, a **0600** XDG file `…/ai.tinkerway.app/master-key` (dev/cloud VM fallback only). Never store the key in the vault folder or the repo. |
 | Vault root | Application Support / XDG: `…/ai.tinkerway.app/vault/` via `directories`. |
 | Prefs / paths | Plaintext JSON OK later (theme, last-selected id, vault root). |
@@ -23,7 +23,7 @@ Threat model (v0): resist casual filesystem browse and sync/backup of vault file
 ~/.local/share/ai.tinkerway.app/                  # Linux (XDG)
   master-key            # Linux fallback only (0600); Mac uses Keychain
   vault/
-    manifest.json       # version, aead id, note ids — no bodies
+    manifest            # TWMANIFEST header + note id / updated lines — no bodies
     notes/<id>.tw       # TW01 || nonce || ciphertext+tag
 ```
 

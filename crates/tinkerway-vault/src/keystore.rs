@@ -103,8 +103,6 @@ fn linux_key_path() -> Result<PathBuf, KeystoreError> {
     Ok(dir.join(LINUX_KEY_FILE))
 }
 
-/// Linux/dev fallback: hex master key in a 0600 file under the app data dir.
-/// Not used on macOS. Prefer Secret Service when the daemon is available.
 #[cfg(target_os = "linux")]
 fn load_or_create_via_xdg_file() -> Result<MasterKey, KeystoreError> {
     let path = linux_key_path()?;
@@ -143,8 +141,6 @@ mod tests {
         let key = load_or_create_master_key().expect("create master key");
         assert_eq!(key.as_bytes().len(), 32);
 
-        // Second call must return the same key (Secret Service, keyutils cache,
-        // or XDG file fallback — not the in-process mock).
         let again = load_or_create_master_key().expect("reload master key");
         assert_eq!(key.to_hex(), again.to_hex());
     }

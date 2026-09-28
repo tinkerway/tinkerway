@@ -45,7 +45,6 @@ pub fn migrate_legacy_workspace(
             }
         };
         if body.trim().is_empty() {
-            // Empty file — delete without migrating.
             let _ = fs::remove_file(&path);
             report.deleted += 1;
             continue;
@@ -59,7 +58,6 @@ pub fn migrate_legacy_workspace(
             }
         };
 
-        // Verify decrypt round-trip before deleting plaintext.
         match vault.read_note(&id) {
             Ok(note) if note.body.trim_end() == body.trim_end() => {
                 fs::remove_file(&path).map_err(VaultError::from)?;
@@ -72,7 +70,6 @@ pub fn migrate_legacy_workspace(
         }
     }
 
-    // Remove legacy dir if empty.
     if let Ok(mut rd) = fs::read_dir(&legacy) {
         if rd.next().is_none() {
             let _ = fs::remove_dir(&legacy);
