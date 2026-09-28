@@ -1,5 +1,5 @@
-/* Demo v1 capture (Tauri explore). Draft stays off the list until Send.
-   Master key never crosses IPC — only note DTOs via invoke. */
+/* Demo v1 capture (Tauri explore) — UI/behavior parity with GPUI app/src/home.rs.
+   Draft stays off the list until Send. Master key never crosses IPC. */
 
 const AUTOSAVE_MS = 400;
 
@@ -11,11 +11,14 @@ const el = {
   list: document.getElementById("note-list"),
   home: document.getElementById("home"),
   shortcuts: document.getElementById("shortcuts"),
+  breadcrumb: document.getElementById("breadcrumb"),
   btnSend: document.getElementById("btn-send"),
   btnNew: document.getElementById("btn-new"),
   btnHome: document.getElementById("btn-home"),
   btnShortcuts: document.getElementById("btn-shortcuts"),
   btnCloseShortcuts: document.getElementById("btn-close-shortcuts"),
+  sendChord: document.getElementById("send-chord"),
+  newChord: document.getElementById("new-chord"),
 };
 
 /** @type {string | null} */
@@ -23,13 +26,13 @@ let draftId = null;
 /** @type {string | null} */
 let selectedId = null;
 let saveTimer = null;
-let dirty = false;
-let modHeld = false;
+let draftDirty = false;
+let keysVisible = false;
 
 function invoke(cmd, args = {}) {
   const core = window.__TAURI__?.core;
   if (!core?.invoke) {
-    return Promise.reject(new Error("Tauri IPC unavailable (open via cargo run -p tinkerway-tauri)"));
+    return Promise.reject(new Error("Tauri IPC unavailable"));
   }
   return core.invoke(cmd, args);
 }
@@ -38,18 +41,66 @@ function isMac() {
   return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 }
 
-function formatTime(unix) {
-  if (!unix) return "";
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(new Date(unix * 1000));
-  } catch {
-    return "";
+function modName() {
+  return isMac() ? "Cmd" : "Ctrl";
+}
+
+function whenLabel(updatedUnix) {
+  const now = Math.floor(Date.now() / 1000);
+  const age = Math.max(0, now - (updatedUnix || now));
+  if (age < 120) return "Now";
+  if (age < 18 * 3600) return "Today";
+  if (age < 42 * 3600) return "Yesterday";
+  const days = [
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+  ];
+  return days[Math.floor((updatedUnix || 0) / 86400) % 7];
+}
+
+function updateModLabels() {
+  const name = modName();
+  for (const node of document.querySelectorAll("[data-mod-name]")) {
+    node.textContent = name;
   }
+  el.sendChord.textContent = `${name} + Enter`;
+  el.newChord.textContent = `${name} + N`;
+}
+
+function setKeysVisible(show) {
+  if (keysVisible === show) return;
+  keysVisible = show;
+  el.sendChord.classList.toggle("hidden", !show);
+  el.newChord.classList.toggle("hidden", !show);
+}
+
+function updateSendEnabled() {
+  const can = el.compose.value.trim().length > 0;
+  el.btnSend.disabled = !can;
+  el.btnSend.classList.toggle("is-dim", !can);
+}
+
+function onShortcutsScreen() {
+  return !el.shortcuts.classList.contains("hidden");
+}
+
+function showShortcuts() {
+  el.shortcuts.classList.remove("hidden");
+  el.home.classList.add("hidden");
+  el.breadcrumb.classList.remove("hidden");
+  el.btnCloseShortcuts.classList.remove("hidden");
+}
+
+function hideShortcuts() {
+  el.shortcuts.classList.add("hidden");
+  el.home.classList.remove("hidden");
+  el.breadcrumb.classList.add("hidden");
+  el.btnCloseShortcuts.classList.add("hidden");
 }
 
 function showCompose() {
@@ -57,6 +108,7 @@ function showCompose() {
   el.readCard.classList.add("hidden");
   el.writeCard.classList.remove("hidden");
   el.compose.focus();
+  updateSendEnabled();
   renderListActive();
 }
 
@@ -68,15 +120,9 @@ function showRead(body) {
   renderListActive();
 }
 
-function openShortcuts() {
-  el.shortcuts.classList.remove("hidden");
-  el.home.classList.add("hidden");
-}
-
-function closeShortcuts() {
-  el.shortcuts.classList.add("hidden");
-  el.home.classList.remove("hidden");
-  if (!selectedId) el.compose.focus();
+function goHome() {
+  hideShortcuts();
+  showCompose();
 }
 
 async function refreshList() {
@@ -89,13 +135,20 @@ async function refreshList() {
     btn.type = "button";
     btn.className = "note-row" + (selectedId === note.id ? " active" : "");
     btn.dataset.id = note.id;
-    const title = document.createElement("div");
+
+    const mark = document.createElement("span");
+    mark.className = "note-mark";
+    mark.setAttribute("aria-hidden", "true");
+
+    const title = document.createElement("span");
     title.className = "note-title";
     title.textContent = note.title || "Untitled";
-    const time = document.createElement("div");
-    time.className = "note-time";
-    time.textContent = formatTime(note.updatedUnix);
-    btn.append(title, time);
+
+    const when = document.createElement("span");
+    when.className = "note-when";
+    when.textContent = whenLabel(note.updatedUnix);
+
+    btn.append(mark, title, when);
     btn.addEventListener("click", () => onSelectNote(note.id));
     li.append(btn);
     el.list.append(li);
@@ -108,97 +161,105 @@ function renderListActive() {
   }
 }
 
-async function onSelectNote(id) {
-  if (selectedId === id) {
-    showCompose();
+async function flushDraft() {
+  if (!draftDirty) return;
+  const body = el.compose.value;
+  if (!body.trim()) {
+    draftDirty = false;
     return;
   }
-  const note = await invoke("read_note", { id });
-  selectedId = id;
-  showRead(note.body);
-}
-
-async function flushDraft() {
-  const body = el.compose.value;
-  if (!body.trim()) return;
   if (draftId) {
     await invoke("update_note", { id: draftId, body });
   } else {
     draftId = await invoke("create_note", { body });
   }
-  dirty = false;
+  draftDirty = false;
 }
 
 function scheduleSave() {
-  dirty = true;
+  draftDirty = true;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     flushDraft().catch((err) => console.error("autosave", err));
   }, AUTOSAVE_MS);
 }
 
+async function onSelectNote(id) {
+  if (selectedId === id) {
+    goHome();
+    return;
+  }
+  clearTimeout(saveTimer);
+  await flushDraft();
+  const note = await invoke("read_note", { id });
+  selectedId = id;
+  hideShortcuts();
+  showRead(note.body);
+}
+
 async function send() {
   const body = el.compose.value;
   if (!body.trim()) return;
   clearTimeout(saveTimer);
-  await flushDraft();
+  if (draftId) {
+    await invoke("update_note", { id: draftId, body });
+  } else {
+    await invoke("create_note", { body });
+  }
   draftId = null;
+  draftDirty = false;
   el.compose.value = "";
-  dirty = false;
+  updateSendEnabled();
   showCompose();
   await refreshList();
 }
 
 async function newCapture() {
   clearTimeout(saveTimer);
+  // Match GPUI start_new: save compose content if any, else leave open capture / shortcuts.
   if (el.compose.value.trim()) {
-    await flushDraft();
-    draftId = null;
-    el.compose.value = "";
-    dirty = false;
-    await refreshList();
+    await send();
+    return;
   }
-  showCompose();
+  goHome();
 }
 
 function onComposeInput() {
   if (selectedId) return;
+  updateSendEnabled();
   scheduleSave();
 }
 
-function updateModLabels() {
-  const glyph = isMac() ? "⌘" : "Ctrl";
-  for (const k of document.querySelectorAll("kbd[data-mod]")) {
-    k.textContent = glyph;
+function closeShortcutsOrBlur() {
+  if (onShortcutsScreen()) {
+    hideShortcuts();
+    if (!selectedId) el.compose.focus();
+    return;
+  }
+  if (document.activeElement === el.compose) {
+    el.compose.blur();
   }
 }
 
 function onKeyDown(e) {
   const mod = e.metaKey || e.ctrlKey;
   if (e.key === "Meta" || e.key === "Control") {
-    modHeld = true;
+    setKeysVisible(true);
   }
 
   if (e.key === "Escape") {
-    if (!el.shortcuts.classList.contains("hidden")) {
-      closeShortcuts();
-      e.preventDefault();
-      return;
-    }
-    if (document.activeElement === el.compose) {
-      el.compose.blur();
-      e.preventDefault();
-    }
+    closeShortcutsOrBlur();
+    e.preventDefault();
     return;
   }
 
-  if (!el.shortcuts.classList.contains("hidden")) {
+  if (onShortcutsScreen()) {
     return;
   }
 
   if (mod && e.key === "Enter") {
     e.preventDefault();
-    send().catch(console.error);
+    if (!selectedId) send().catch(console.error);
     return;
   }
 
@@ -211,35 +272,41 @@ function onKeyDown(e) {
   const inField = document.activeElement === el.compose;
   if (!inField && (e.key === "?" || (e.key === "/" && e.shiftKey))) {
     e.preventDefault();
-    openShortcuts();
+    showShortcuts();
   }
 }
 
 function onKeyUp(e) {
   if (e.key === "Meta" || e.key === "Control") {
-    modHeld = false;
+    // Secondary still held (Cmd+Ctrl edge) — only hide when neither remains.
+    if (!e.metaKey && !e.ctrlKey) setKeysVisible(false);
   }
 }
 
+function onBlurWindow() {
+  setKeysVisible(false);
+}
+
 el.compose.addEventListener("input", onComposeInput);
-el.btnSend.addEventListener("click", () => send().catch(console.error));
-el.btnNew.addEventListener("click", () => newCapture().catch(console.error));
-el.btnHome.addEventListener("click", () => {
-  closeShortcuts();
-  showCompose();
+el.btnSend.addEventListener("click", () => {
+  if (!el.btnSend.disabled) send().catch(console.error);
 });
-el.btnShortcuts.addEventListener("click", openShortcuts);
-el.btnCloseShortcuts.addEventListener("click", closeShortcuts);
+el.btnNew.addEventListener("click", () => newCapture().catch(console.error));
+el.btnHome.addEventListener("click", goHome);
+el.btnShortcuts.addEventListener("click", showShortcuts);
+el.btnCloseShortcuts.addEventListener("click", () => {
+  hideShortcuts();
+  if (!selectedId) el.compose.focus();
+});
 window.addEventListener("keydown", onKeyDown);
 window.addEventListener("keyup", onKeyUp);
+window.addEventListener("blur", onBlurWindow);
 
 updateModLabels();
+updateSendEnabled();
 refreshList()
   .then(() => showCompose())
   .catch((err) => {
     console.error(err);
-    el.compose.placeholder = "Vault unavailable — see apps/tinkerway-tauri/README.md";
+    showCompose();
   });
-
-// silence unused in strict tooling if any
-void modHeld;

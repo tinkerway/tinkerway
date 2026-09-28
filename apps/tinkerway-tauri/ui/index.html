@@ -8,56 +8,96 @@
   </head>
   <body>
     <div id="app" class="app">
-      <header class="topbar">
+      <header class="chrome">
         <button type="button" class="brand" id="btn-home" aria-label="Tinkerway home">
           <img src="tinkerway-icon.png" width="32" height="32" alt="" />
           <span class="brand-name">Tinkerway</span>
         </button>
-        <span class="explore-tag" title="Bake-off shell — not the shipping GPUI app">explore</span>
+        <div id="breadcrumb" class="breadcrumb hidden" aria-hidden="true">
+          <span class="crumb-sep">></span>
+          <span class="crumb-label">Shortcuts</span>
+        </div>
+        <button
+          type="button"
+          class="chrome-close hidden"
+          id="btn-close-shortcuts"
+          aria-label="Close shortcuts"
+        >
+          ×
+        </button>
       </header>
 
       <main id="home" class="home">
         <section class="compose-pane" aria-label="Write">
-          <div id="write-card" class="write-card">
+          <div id="write-card" class="mist-card write-card">
             <textarea
               id="compose"
               class="compose"
               placeholder="What's new?"
-              rows="8"
               spellcheck="true"
               autofocus
             ></textarea>
+            <button type="button" class="pill send" id="btn-send" disabled>
+              <span class="pill-label">Send</span>
+              <span class="pill-chord hidden" id="send-chord" data-chord="mod-enter"></span>
+            </button>
           </div>
-          <div id="read-card" class="read-card hidden" aria-live="polite">
-            <pre id="read-body" class="read-body"></pre>
-          </div>
-          <div class="compose-actions">
-            <button type="button" class="btn primary" id="btn-send">Send</button>
-            <button type="button" class="btn ghost" id="btn-shortcuts">Shortcuts</button>
+          <div id="read-card" class="mist-card read-card hidden" aria-live="polite">
+            <div class="view-label">View</div>
+            <div id="read-body" class="read-body"></div>
           </div>
         </section>
 
         <aside class="library" aria-label="Library">
           <div class="library-toolbar">
-            <button type="button" class="btn secondary" id="btn-new">New</button>
+            <button type="button" class="pill new" id="btn-new">
+              <span class="pill-label">New</span>
+              <span class="pill-chord hidden" id="new-chord" data-chord="mod-n"></span>
+            </button>
           </div>
           <ul id="note-list" class="note-list"></ul>
         </aside>
       </main>
 
-      <section id="shortcuts" class="shortcuts hidden" aria-label="Shortcuts">
-        <div class="shortcuts-panel">
-          <h1>Shortcuts</h1>
-          <ul>
-            <li><kbd data-mod>⌘</kbd><kbd>Enter</kbd> Send</li>
-            <li><kbd data-mod>⌘</kbd><kbd>N</kbd> New</li>
-            <li><kbd>?</kbd> Shortcuts (after leaving the field)</li>
-            <li><kbd>Esc</kbd> Leave / close</li>
-          </ul>
-          <p class="hint">Enter stays a newline in the writing field.</p>
-          <button type="button" class="btn primary" id="btn-close-shortcuts">Back</button>
-        </div>
+      <section id="shortcuts" class="shortcuts-page hidden" aria-label="Shortcuts">
+        <p class="shortcuts-intro">
+          Hold <kbd class="keycap" data-mod-name>Cmd</kbd> to see the shortcut keys anywhere in the
+          app.
+        </p>
+        <ul class="shortcut-rows">
+          <li class="shortcut-row">
+            <div class="shortcut-keys"><kbd class="keycap">?</kbd></div>
+            <span class="shortcut-label">Shortcuts</span>
+          </li>
+          <li class="shortcut-row">
+            <div class="shortcut-keys">
+              <kbd class="keycap" data-mod-name>Cmd</kbd>
+              <span class="plus">+</span>
+              <kbd class="keycap">Enter</kbd>
+            </div>
+            <span class="shortcut-label">Send</span>
+          </li>
+          <li class="shortcut-row">
+            <div class="shortcut-keys">
+              <kbd class="keycap" data-mod-name>Cmd</kbd>
+              <span class="plus">+</span>
+              <kbd class="keycap">N</kbd>
+            </div>
+            <span class="shortcut-label">New</span>
+          </li>
+          <li class="shortcut-row">
+            <div class="shortcut-keys"><kbd class="keycap">esc</kbd></div>
+            <span class="shortcut-label">Leave</span>
+          </li>
+        </ul>
       </section>
+
+      <footer class="shortcuts-hint">
+        <button type="button" class="hint-btn" id="btn-shortcuts">
+          <span>Shortcuts</span>
+          <kbd class="keycap">?</kbd>
+        </button>
+      </footer>
     </div>
     <script src="app.js"></script>
   </body>
